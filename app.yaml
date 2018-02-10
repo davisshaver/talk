@@ -1,5 +1,4 @@
 env: flex
 runtime: nodejs
-service: talk
 manual_scaling:
   instances: 1
