@@ -1,0 +1,11 @@
+{
+  "alias": "talk.phillypublishing.com",
+  "env": {
+    "TALK_MONGO_URL": "@talk-mongo-url",
+    "TALK_REDIS_URL": "@talk-redis-url",
+    "TALK_JWT_SECRET": "@talk-jwt-secret",
+    "TALK_FACEBOOK_APP_ID": "@talk-facebook-app-id",
+    "TALK_FACEBOOK_APP_SECRET": "@talk-facebook-app-secret",
+    "TALK_ROOT_URL": "@talk-root-url"
+  }
+}
