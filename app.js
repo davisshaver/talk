@@ -1,3 +1,4 @@
+require('now-logs')('ppc-talk-secret');
 const express = require('express');
 const morgan = require('morgan');
 const path = require('path');
