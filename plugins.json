@@ -7,7 +7,6 @@
     "talk-plugin-toxic-comments"
   ],
   "client": [
-    "talk-plugin-akismet",
     "talk-plugin-auth",
     "talk-plugin-author-menu",
     "talk-plugin-comment-content",
