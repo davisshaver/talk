@@ -238,8 +238,9 @@ async function reconcileLocalPlugins({ skipRemote, dryRun }) {
           'Could not install local plugin dependencies, errors occurred during install'
         );
       }
-
-      console.log(output.stdout.toString());
+      if (output.stdout) {
+        console.log(output.stdout.toString());
+      }
     }
   }
 }
