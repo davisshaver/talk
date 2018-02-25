@@ -1,6 +1,7 @@
 {
   "server": [
     "talk-plugin-auth",
+    "talk-plugin-facebook-auth",
     "talk-plugin-featured-comments",
     "talk-plugin-offtopic",
     "talk-plugin-respect"
@@ -9,6 +10,7 @@
     "talk-plugin-auth",
     "talk-plugin-author-menu",
     "talk-plugin-comment-content",
+    "talk-plugin-facebook-auth",
     "talk-plugin-featured-comments",
     "talk-plugin-flag-details",
     "talk-plugin-ignore-user",
