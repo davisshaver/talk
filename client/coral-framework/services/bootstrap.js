@@ -14,6 +14,7 @@ import { createPluginsService } from './plugins';
 import { createNotificationService } from './notification';
 import { createGraphQLRegistry } from './graphqlRegistry';
 import { createGraphQLService } from './graphql';
+import { createPostMessage } from './postMessage';
 import globalFragments from 'coral-framework/graphql/fragments';
 import {
   createStorage,
@@ -24,7 +25,11 @@ import { createIntrospection } from 'coral-framework/services/introspection';
 import introspectionData from 'coral-framework/graphql/introspection.json';
 import coreReducers from '../reducers';
 import { checkLogin as checkLoginAction } from '../actions/auth';
-import { mergeConfig } from '../actions/config';
+import {
+  mergeConfig,
+  enablePluginsDebug,
+  disablePluginsDebug,
+} from '../actions/config';
 import { setAuthToken, logout } from '../actions/auth';
 
 /**
@@ -61,8 +66,19 @@ function initExternalConfig({ store, pym, inIframe }) {
   }
   return new Promise(resolve => {
     pym.sendMessage('getConfig');
-    pym.onMessage('config', config => {
-      store.dispatch(mergeConfig(JSON.parse(config)));
+    pym.onMessage('config', rawConfig => {
+      const config = JSON.parse(rawConfig);
+      if (config.plugin_config) {
+        // @Deprecated
+        if (process.env.NODE_ENV !== 'production') {
+          console.warn(
+            'Deprecation Warning: `config.plugin_config` will be phased out soon, please replace `config.plugin_config  with `config.plugins_config`'
+          );
+        }
+        config.plugins_config = config.plugin_config;
+        delete config.plugin_config;
+      }
+      store.dispatch(mergeConfig(config));
       resolve();
     });
   });
@@ -118,7 +134,7 @@ export async function createContext({
   });
 
   const staticConfig = getStaticConfiguration();
-  let { LIVE_URI: liveUri } = staticConfig;
+  let { LIVE_URI: liveUri, STATIC_ORIGIN: origin } = staticConfig;
   if (liveUri == null) {
     // The protocol must match the origin protocol, secure/insecure.
     const protocol = location.protocol === 'https:' ? 'wss' : 'ws';
@@ -127,6 +143,8 @@ export async function createContext({
     // with the live path appended to it.
     liveUri = `${protocol}://${location.host}${BASE_PATH}api/v1/live`;
   }
+
+  const postMessage = createPostMessage(origin);
 
   const client = createClient({
     uri: `${BASE_PATH}api/v1/graph/ql`,
@@ -158,6 +176,7 @@ export async function createContext({
     pymLocalStorage,
     pymSessionStorage,
     inIframe,
+    postMessage,
   };
 
   // Load framework fragments.
@@ -210,6 +229,14 @@ export async function createContext({
 
     pym.onMessage('logout', () => {
       store.dispatch(logout());
+    });
+
+    pym.onMessage('enablePluginsDebug', () => {
+      store.dispatch(enablePluginsDebug());
+    });
+
+    pym.onMessage('disablePluginsDebug', () => {
+      store.dispatch(disablePluginsDebug());
     });
   }
 

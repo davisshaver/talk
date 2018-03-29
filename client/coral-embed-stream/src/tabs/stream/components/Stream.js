@@ -12,21 +12,16 @@ import RestrictedMessageBox from 'coral-framework/components/RestrictedMessageBo
 import t, { timeago } from 'coral-framework/services/i18n';
 import CommentBox from '../containers/CommentBox';
 import QuestionBox from '../../../components/QuestionBox';
-import { isCommentActive } from 'coral-framework/utils';
 import { Tab, TabCount, TabPane } from 'coral-ui';
 import cn from 'classnames';
 import get from 'lodash/get';
-
-import {
-  getTopLevelParent,
-  attachCommentToParent,
-} from '../../../graphql/utils';
+import { reverseCommentParentTree } from '../../../graphql/utils';
 import AllCommentsPane from './AllCommentsPane';
 import ExtendableTabPanel from '../../../containers/ExtendableTabPanel';
+import ChangedUsername from './ChangedUsername';
+import CommentNotFound from '../containers/CommentNotFound';
 
 import styles from './Stream.css';
-import ChangedUsername from './ChangedUsername';
-
 class Stream extends React.Component {
   constructor(props) {
     super(props);
@@ -44,7 +39,6 @@ class Stream extends React.Component {
 
   renderHighlightedComment() {
     const {
-      data,
       root,
       activeReplyBox,
       setActiveReplyBox,
@@ -64,16 +58,10 @@ class Stream extends React.Component {
       viewAllComments,
     } = this.props;
 
-    // even though the permalinked comment is the highlighted one, we're displaying its parent + replies
-    let topLevelComment = getTopLevelParent(comment);
-    if (topLevelComment) {
-      // Inactive comments can be viewed by moderators and admins (e.g. using permalinks).
-      const isInactive = !isCommentActive(comment.status);
-      if (comment.parent && isInactive) {
-        // the highlighted comment is not active and as such not in the replies, so we
-        // attach it to the right parent.
-        topLevelComment = attachCommentToParent(topLevelComment, comment);
-      }
+    let topLevelComment = null;
+    if (comment) {
+      // Reverse the comment tree that we get from bottom-top (comment -> parent) to top-bottom (parent -> comment)
+      topLevelComment = reverseCommentParentTree(comment);
     }
 
     return (
@@ -101,7 +89,6 @@ class Stream extends React.Component {
         </div>
 
         <Comment
-          data={data}
           root={root}
           commentClassNames={commentClassNames}
           setActiveReplyBox={setActiveReplyBox}
@@ -112,7 +99,7 @@ class Stream extends React.Component {
           postComment={postComment}
           asset={asset}
           currentUser={currentUser}
-          highlighted={comment.id}
+          highlighted={comment}
           postFlag={postFlag}
           postDontAgree={postDontAgree}
           loadMore={loadNewReplies}
@@ -132,7 +119,6 @@ class Stream extends React.Component {
 
   renderExtendableTabPanel() {
     const {
-      data,
       root,
       activeReplyBox,
       setActiveReplyBox,
@@ -157,15 +143,14 @@ class Stream extends React.Component {
       loading,
     } = this.props;
 
-    const slotProps = { data };
-    const slotQueryData = { root, asset };
+    const slotPassthrough = { root, asset };
 
     // `key` of `ExtendableTabPanel` depends on sorting so that we always reset
     // the state when changing sorting.
     return (
       <div className={cn('talk-stream-tab-container', styles.tabContainer)}>
         <div className={cn('talk-stream-filter-wrapper', styles.filterWrapper)}>
-          <Slot fill="streamFilter" queryData={slotQueryData} {...slotProps} />
+          <Slot fill="streamFilter" passthrough={slotPassthrough} />
         </div>
 
         <ExtendableTabPanel
@@ -176,8 +161,7 @@ class Stream extends React.Component {
           tabSlot="streamTabs"
           tabSlotPrepend="streamTabsPrepend"
           tabPaneSlot="streamTabPanes"
-          slotProps={slotProps}
-          queryData={slotQueryData}
+          slotPassthrough={slotPassthrough}
           loading={loading}
           tabs={
             <Tab tabId={'all'} key="all">
@@ -190,7 +174,6 @@ class Stream extends React.Component {
           tabPanes={
             <TabPane tabId="all" key="all">
               <AllCommentsPane
-                data={data}
                 root={root}
                 asset={asset}
                 comments={comments}
@@ -222,7 +205,6 @@ class Stream extends React.Component {
 
   render() {
     const {
-      data,
       root,
       appendItemArray,
       asset,
@@ -253,12 +235,16 @@ class Stream extends React.Component {
         !changedUsername &&
         !highlightedComment) ||
         keepCommentBox);
-    const slotProps = { data };
-    const slotQueryData = { root, asset };
 
     if (highlightedComment === null) {
-      return <StreamError>{t('stream.comment_not_found')}</StreamError>;
+      return (
+        <StreamError>
+          <CommentNotFound />
+        </StreamError>
+      );
     }
+
+    const slotPassthrough = { root, asset };
 
     return (
       <div id="stream" className={styles.root}>
@@ -273,11 +259,7 @@ class Stream extends React.Component {
                 content={asset.settings.questionBoxContent}
                 icon={asset.settings.questionBoxIcon}
               >
-                <Slot
-                  fill="streamQuestionArea"
-                  queryData={slotQueryData}
-                  {...slotProps}
-                />
+                <Slot fill="streamQuestionArea" passthrough={slotPassthrough} />
               </QuestionBox>
             )}
             {!banned &&
@@ -296,6 +278,7 @@ class Stream extends React.Component {
             {banned && <BannedAccount />}
             {showCommentBox && (
               <CommentBox
+                root={root}
                 notify={notify}
                 postComment={postComment}
                 appendItemArray={appendItemArray}
@@ -313,7 +296,7 @@ class Stream extends React.Component {
           <p>{asset.settings.closedMessage}</p>
         )}
 
-        <Slot fill="stream" queryData={slotQueryData} {...slotProps} />
+        <Slot fill="stream" passthrough={slotPassthrough} />
 
         {currentUser && (
           <ModerationLink
@@ -333,7 +316,6 @@ class Stream extends React.Component {
 Stream.propTypes = {
   asset: PropTypes.object,
   activeStreamTab: PropTypes.string,
-  data: PropTypes.object,
   root: PropTypes.object,
   activeReplyBox: PropTypes.string,
   setActiveReplyBox: PropTypes.func,

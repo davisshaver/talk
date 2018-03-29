@@ -1,22 +1,33 @@
 import React from 'react';
+import { gql } from 'react-apollo';
+import { getSlotFragmentSpreads } from 'coral-framework/utils';
 import PropTypes from 'prop-types';
 import DraftArea from '../components/DraftArea';
+import withFragments from 'coral-framework/hocs/withFragments';
 
 const STORAGE_PATH = 'DraftArea';
 
 /**
  * An enhanced textarea to make comment drafts.
  */
-export default class DraftAreaContainer extends React.Component {
+class DraftAreaContainer extends React.Component {
   constructor(props, context) {
     super(props, context);
     this.initValue();
   }
 
   async initValue() {
-    const value = await this.context.pymSessionStorage.getItem(this.getPath());
-    if (value && this.props.onChange) {
-      this.props.onChange(value);
+    const input = await this.context.pymSessionStorage.getItem(this.getPath());
+    if (input && this.props.onInputChange) {
+      let parsed = '';
+
+      // Older version saved a normal string, catch those and ignore them.
+      try {
+        parsed = JSON.parse(input);
+      } catch (_e) {}
+      if (typeof parsed === 'object') {
+        this.props.onInputChange(parsed);
+      }
     }
   }
 
@@ -24,14 +35,13 @@ export default class DraftAreaContainer extends React.Component {
     return `${STORAGE_PATH}_${this.props.id}`;
   };
 
-  onChange = e => {
-    this.props.onChange && this.props.onChange(e.target.value);
-  };
-
   componentWillReceiveProps(nextProps) {
-    if (this.props.value !== nextProps.value) {
-      if (nextProps.value) {
-        this.context.pymSessionStorage.setItem(this.getPath(), nextProps.value);
+    if (this.props.input !== nextProps.input) {
+      if (nextProps.input) {
+        this.context.pymSessionStorage.setItem(
+          this.getPath(),
+          JSON.stringify(nextProps.input)
+        );
       } else {
         this.context.pymSessionStorage.removeItem(this.getPath());
       }
@@ -41,15 +51,18 @@ export default class DraftAreaContainer extends React.Component {
   render() {
     return (
       <DraftArea
-        value={this.props.value}
-        placeholder={this.props.placeholder}
+        root={this.props.root}
+        comment={this.props.comment}
+        input={this.props.input}
         id={this.props.id}
-        onChange={this.onChange}
-        rows={this.props.rows}
+        onInputChange={this.props.onInputChange}
         disabled={this.props.disabled}
         charCountEnable={this.props.charCountEnable}
         maxCharCount={this.props.maxCharCount}
-        label={this.props.label}
+        registerHook={this.props.registerHook}
+        unregisterHook={this.props.unregisterHook}
+        isReply={this.props.isReply}
+        isEdit={this.props.isEdit}
       />
     );
   }
@@ -65,10 +78,30 @@ DraftAreaContainer.propTypes = {
   charCountEnable: PropTypes.bool,
   maxCharCount: PropTypes.number,
   id: PropTypes.string.isRequired,
-  value: PropTypes.string.isRequired,
-  placeholder: PropTypes.string,
-  onChange: PropTypes.func.isRequired,
+  input: PropTypes.object.isRequired,
+  onInputChange: PropTypes.func.isRequired,
   disabled: PropTypes.bool,
-  rows: PropTypes.number,
-  label: PropTypes.string.isRequired,
+  registerHook: PropTypes.func,
+  unregisterHook: PropTypes.func,
+  isReply: PropTypes.bool,
+  isEdit: PropTypes.bool,
+  root: PropTypes.object.isRequired,
+  comment: PropTypes.object,
 };
+
+const slots = ['draftArea', 'commentInputArea'];
+
+export default withFragments({
+  root: gql`
+    fragment TalkEmbedStream_DraftArea_root on RootQuery {
+      __typename
+      ${getSlotFragmentSpreads(slots, 'root')}
+    }
+  `,
+  comment: gql`
+    fragment TalkEmbedStream_DraftArea_comment on Comment {
+      __typename
+      ${getSlotFragmentSpreads(slots, 'comment')}
+    }
+  `,
+})(DraftAreaContainer);
