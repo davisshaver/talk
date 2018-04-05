@@ -6,6 +6,7 @@ npm-debug.log*
 dump.rdb
 
 client/coral-framework/graphql/introspection.json
+docs/source/_data/introspection.json
 
 .env
 *.cfg
@@ -22,11 +23,6 @@ test/e2e/bslocal.log
 test/e2e/selenium-debug.log
 browserstack.err
 
-<<<<<<< HEAD
-=======
-plugins.json
-
->>>>>>> cb7b4133f9104c7da064be32b36f743325ca1ed4
 plugins/*
 !plugins/talk-plugin-akismet
 !plugins/talk-plugin-auth
