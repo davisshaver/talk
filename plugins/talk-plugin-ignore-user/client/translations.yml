@@ -1,3 +1,15 @@
+ar:
+  talk-plugin-ignore-user:
+    section_title: المستخدمون الذين تم تجاهلهم
+    section_info: لأنك تجاهلت المعلقين التاليين، يتم إخفاء تعليقاتهم.
+    stop_ignoring: إيقاف التجاهل
+    ignore_user: تجاهل المستخدم
+    cancel: إلغاء
+    confirmation: |
+      عند تجاهل المستخدم، سيتم إخفاء جميع التعليقات التي كتبها على الموقع منك. يمكنك التراجع عن هذا لاحقا من ملفي الشخصي.
+    notify_success: |
+      أنت الآن تتجاهل {0}. يمكنك التراجع عن هذا الإجراء من ملفي الشخصي.
+    confirmation_title: تجاهل {0}؟
 da:
   talk-plugin-ignore-user:
     section_title: Ignored users
@@ -13,6 +25,7 @@ da:
     confirmation_title: Ignore {0}?
 en:
   talk-plugin-ignore-user:
+    blank_info: You are currently not ignoring any users
     section_title: Ignored users
     section_info: Because you ignored the following commenters, their comments are hidden.
     stop_ignoring: Stop ignoring
@@ -68,7 +81,7 @@ nl_NL:
     ignore_user: Gebruiker negeren
     cancel: Annuleren
     confirmation: |
-      Wanneer je een gebruiker negeert, zullen al zijn/haar reacties voor jou worden verborgen. Je kunt 
+      Wanneer je een gebruiker negeert, zullen al zijn/haar reacties voor jou worden verborgen. Je kunt
       dit later ongedaan maken vanuit Mijn profiel.
     notify_success: |
       Je negeert nu {0}. Je kunt dit ongedaan maken vanuit Mijn profiel.

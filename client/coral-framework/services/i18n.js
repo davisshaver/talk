@@ -4,6 +4,7 @@ import get from 'lodash/get';
 import merge from 'lodash/merge';
 
 import moment from 'moment';
+import 'moment/locale/ar';
 import 'moment/locale/da';
 import 'moment/locale/de';
 import 'moment/locale/es';
@@ -12,6 +13,7 @@ import 'moment/locale/pt-br';
 
 import { createStorage } from 'coral-framework/services/storage';
 
+import arTA from 'timeago.js/locales/ar';
 import daTA from 'timeago.js/locales/da';
 import deTA from 'timeago.js/locales/de';
 import esTA from 'timeago.js/locales/es';
@@ -21,6 +23,7 @@ import zh_CNTA from 'timeago.js/locales/zh_CN';
 import zh_TWTA from 'timeago.js/locales/zh_TW';
 import nl from 'timeago.js/locales/nl';
 
+import ar from '../../../locales/ar.yml';
 import en from '../../../locales/en.yml';
 import da from '../../../locales/da.yml';
 import de from '../../../locales/de.yml';
@@ -33,6 +36,7 @@ import nl_NL from '../../../locales/nl_NL.yml';
 
 const defaultLanguage = process.env.TALK_DEFAULT_LANG;
 const translations = {
+  ...ar,
   ...en,
   ...da,
   ...de,
@@ -48,26 +52,41 @@ let lang;
 let timeagoInstance;
 
 function setLocale(storage, locale) {
-  try {
-    if (storage) {
-      storage.setItem('locale', locale);
-    }
-  } catch (err) {
-    console.error(err);
-  }
+  storage.setItem('locale', locale);
 }
 
-function getLocale(storage) {
+// detectLanguage will try to get the locale from storage if available,
+// otherwise will try to get it from the navigator, otherwise, it will fallback
+// to the default language.
+function detectLanguage(storage) {
   try {
-    return (
-      (storage && storage.getItem('locale')) ||
-      navigator.language ||
-      defaultLanguage
-    ).split('-')[0];
+    const lang = storage.getItem('locale') || navigator.language;
+    if (lang) {
+      return lang;
+    }
   } catch (err) {
-    console.error(err);
-    return null;
+    console.warn(
+      'Error while trying to detect language, will fallback to',
+      err
+    );
   }
+
+  console.warn('Could not detect language, will fallback to', defaultLanguage);
+  return defaultLanguage;
+}
+
+// getLocale will get the users locale from the local detector and parse it to a
+// format we can work with.
+function getLocale(storage) {
+  // Get the language from the local detector.
+  const lang = detectLanguage(storage);
+
+  // Some language strings come with additional subtags as defined in:
+  //
+  // https://www.ietf.org/rfc/bcp/bcp47.txt
+  //
+  // So we should strip that off if we find it.
+  return lang.split('-')[0];
 }
 
 export function setupTranslations() {
@@ -88,6 +107,7 @@ export function setupTranslations() {
     lang = defaultLanguage;
   }
 
+  ta.register('ar', arTA);
   ta.register('es', esTA);
   ta.register('da', daTA);
   ta.register('de', deTA);
@@ -131,6 +151,7 @@ export function t(key, ...replacements) {
     replacements.forEach((str, i) => {
       translation = translation.replace(new RegExp(`\\{${i}\\}`, 'g'), str);
     });
+
     return translation;
   } else {
     console.warn(`${lang}.${key} and en.${key} language key not set`);

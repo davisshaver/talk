@@ -1,17 +1,29 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-
 import t, { timeago } from 'coral-framework/services/i18n';
 import { can } from 'coral-framework/services/perms';
 import { isSuspended } from 'coral-framework/utils/user';
-
 import Slot from 'coral-framework/components/Slot';
 import { connect } from 'react-redux';
-import { CommentForm } from '../components/CommentForm';
+import CommentForm from '../containers/CommentForm';
 import { notifyForNewCommentStatus } from '../helpers';
+import withHooks from '../hocs/withHooks';
+import { compose } from 'recompose';
+import once from 'lodash/once';
 
 // TODO: (kiwi) Need to adapt CSS classes post refactor to match the rest.
 export const name = 'talk-plugin-commentbox';
+
+// @Deprecated
+const showOldTagsWarningOnce = once(() => {
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn(
+      'Using `addTags` and `removeTags` is deprecated. Please switch to `onInputChange` and `input` instead'
+    );
+  }
+});
+
+const initialInput = { body: '', tags: [] };
 
 /**
  * Container for posting a new Comment
@@ -21,13 +33,8 @@ class CommentBox extends React.Component {
     super(props);
 
     this.state = {
-      body: '',
       loadingState: '',
-
-      hooks: {
-        preSubmit: [],
-        postSubmit: [],
-      },
+      input: initialInput,
     };
   }
 
@@ -57,25 +64,39 @@ class CommentBox extends React.Component {
       return;
     }
 
+    // @Deprecated
+    const deprecatedTags = this.props.tags || [];
+    if (deprecatedTags.length) {
+      showOldTagsWarningOnce();
+    }
+    const tags = this.state.input.tags || [];
+
     let input = {
       asset_id: assetId,
       parent_id: parentId,
-      body: this.state.body,
-      tags: this.props.tags,
+      ...this.state.input,
+      tags: [...deprecatedTags, ...tags],
     };
 
     // Execute preSubmit Hooks
-    this.state.hooks.preSubmit.forEach(hook => hook(input));
+    this.props.forEachHook('preSubmit', hook => {
+      const result = hook(input);
+      if (result) {
+        input = result;
+      }
+    });
     this.setState({ loadingState: 'loading' });
 
     postComment(input, 'comments')
       .then(({ data }) => {
-        this.setState({ loadingState: 'success', body: '' });
+        this.setState({ loadingState: 'success', input: initialInput });
         const postedComment = data.createComment.comment;
         const actions = data.createComment.actions;
 
         // Execute postSubmit Hooks
-        this.state.hooks.postSubmit.forEach(hook => hook(data));
+        this.props.forEachHook('postSubmit', hook =>
+          hook(data, this.handleInputChange)
+        );
 
         notifyForNewCommentStatus(notify, postedComment.status, actions);
 
@@ -88,59 +109,44 @@ class CommentBox extends React.Component {
       });
   };
 
-  handleBodyChange = body => {
-    this.setState({ body });
+  handleInputChange = input => {
+    this.setState(state => ({
+      input: {
+        ...state.input,
+        ...input,
+      },
+    }));
   };
 
-  registerHook = (hookType = '', hook = () => {}) => {
-    if (typeof hook !== 'function') {
-      return console.warn(
-        `Hooks must be functions. Please check your ${hookType} hooks`
-      );
-    } else if (typeof hookType === 'string') {
-      this.setState(state => ({
-        hooks: {
-          ...state.hooks,
-          [hookType]: [...state.hooks[hookType], hook],
-        },
-      }));
-
-      return {
-        hookType,
-        hook,
-      };
-    } else {
-      return console.warn(
-        'hookTypes must be a string. Please check your hooks'
-      );
-    }
-  };
-
-  unregisterHook = hookData => {
-    const { hookType, hook } = hookData;
-
-    this.setState(state => {
-      let newHooks = state.hooks[newHooks];
-      const idx = state.hooks[hookType].indexOf(hook);
-
-      if (idx !== -1) {
-        newHooks = [
-          ...state.hooks[hookType].slice(0, idx),
-          ...state.hooks[hookType].slice(idx + 1),
-        ];
-      }
-
-      return {
-        hooks: {
-          ...state.hooks,
-          [hookType]: newHooks,
-        },
-      };
-    });
-  };
+  renderButtonContainerStart() {
+    const { root, isReply, registerHook, unregisterHook } = this.props;
+    return (
+      <Slot
+        fill="commentInputDetailArea"
+        passthrough={{
+          root,
+          registerHook: registerHook,
+          unregisterHook: unregisterHook,
+          isReply,
+          input: this.state.input,
+          onInputChange: this.handleInputChange,
+        }}
+        inline
+      />
+    );
+  }
 
   render() {
-    const { isReply, maxCharCount, assetId, parentId } = this.props;
+    const {
+      isReply,
+      maxCharCount,
+      assetId,
+      parentId,
+      comment,
+      root,
+      registerHook,
+      unregisterHook,
+    } = this.props;
     let { onCancel } = this.props;
 
     if (isReply && typeof onCancel !== 'function') {
@@ -158,23 +164,18 @@ class CommentBox extends React.Component {
     return (
       <div>
         <CommentForm
+          root={root}
+          comment={comment}
           defaultValue={this.props.defaultValue}
-          bodyLabel={isReply ? t('comment_box.reply') : t('comment.comment')}
           maxCharCount={maxCharCount}
           charCountEnable={this.props.charCountEnable}
-          bodyPlaceholder={t('comment.comment')}
-          bodyInputId={id}
-          body={this.state.body}
-          buttonContainerStart={
-            <Slot
-              fill="commentInputDetailArea"
-              registerHook={this.registerHook}
-              unregisterHook={this.unregisterHook}
-              isReply={isReply}
-              inline
-            />
-          }
-          onBodyChange={this.handleBodyChange}
+          id={id}
+          input={this.state.input}
+          registerHook={registerHook}
+          unregisterHook={unregisterHook}
+          isReply={isReply}
+          buttonContainerStart={this.renderButtonContainerStart()}
+          onInputChange={this.handleInputChange}
           loadingState={this.state.loadingState}
           onCancel={onCancel}
           onSubmit={this.handleSubmit}
@@ -199,10 +200,22 @@ CommentBox.propTypes = {
   canPost: PropTypes.bool,
   notify: PropTypes.func.isRequired,
   tags: PropTypes.array,
+  root: PropTypes.object.isRequired,
+  comment: PropTypes.object,
+  registerHook: PropTypes.func.isRequired,
+  unregisterHook: PropTypes.func.isRequired,
+  forEachHook: PropTypes.func.isRequired,
 };
+
+CommentBox.fragments = CommentForm.fragments;
 
 const mapStateToProps = state => ({
   tags: state.stream.commentBoxTags,
 });
 
-export default connect(mapStateToProps, null)(CommentBox);
+const enhance = compose(
+  withHooks(['preSubmit', 'postSubmit']),
+  connect(mapStateToProps, null)
+);
+
+export default enhance(CommentBox);

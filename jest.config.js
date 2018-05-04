@@ -1,7 +1,7 @@
 const path = require('path');
 const { pluginsPath } = require('./plugins');
 
-const buildTargets = ['coral-admin', 'coral-docs'];
+const buildTargets = ['coral-admin'];
 
 const buildEmbeds = ['stream'];
 
@@ -26,6 +26,8 @@ module.exports = {
     '^.+\\.jsx?$': 'babel-jest',
     '\\.ya?ml$': '<rootDir>/test/client/yamlTransformer.js',
   },
+
+  testResultsProcessor: process.env.JEST_REPORTER,
 
   moduleNameMapper: {
     '^plugin-api\\/(.*)$': '<rootDir>/plugin-api/$1',

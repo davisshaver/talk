@@ -1,28 +1,28 @@
 const uuid = require('uuid');
 const bcrypt = require('bcryptjs');
-const errors = require('../errors');
-const some = require('lodash/some');
-const merge = require('lodash/merge');
-
 const {
-  USERS_NEW,
-  USERS_SUSPENSION_CHANGE,
-  USERS_BAN_CHANGE,
-  USERS_USERNAME_STATUS_CHANGE,
-} = require('./events/constants');
-const events = require('./events');
-
+  ErrMaxRateLimit,
+  ErrLoginAttemptMaximumExceeded,
+  ErrNotFound,
+  ErrPermissionUpdateUsername,
+  ErrSameUsernameProvided,
+  ErrUsernameTaken,
+  ErrMissingUsername,
+  ErrSpecialChars,
+  ErrMissingPassword,
+  ErrPasswordTooShort,
+  ErrMissingEmail,
+  ErrEmailTaken,
+  ErrEmailAlreadyVerified,
+  ErrCannotIgnoreStaff,
+} = require('../errors');
+const { difference, sample, some, merge, random } = require('lodash');
 const { ROOT_URL } = require('../config');
-
 const { jwt: JWT_SECRET } = require('../secrets');
-
 const debug = require('debug')('talk:services:users');
-
 const UserModel = require('../models/user');
-
 const RECAPTCHA_WINDOW = '10m'; // 10 minutes.
 const RECAPTCHA_INCORRECT_TRIGGER = 5; // after 5 incorrect attempts, recaptcha will be required.
-
 const ActionsService = require('./actions');
 const mailer = require('./mailer');
 const i18n = require('./i18n');
@@ -74,8 +74,8 @@ class UsersService {
     try {
       await loginRateLimiter.test(email.toLowerCase().trim());
     } catch (err) {
-      if (err === errors.ErrMaxRateLimit) {
-        throw errors.ErrLoginAttemptMaximumExceeded;
+      if (err instanceof ErrMaxRateLimit) {
+        throw new ErrLoginAttemptMaximumExceeded();
       }
 
       throw err;
@@ -106,7 +106,7 @@ class UsersService {
     if (user === null) {
       user = await UserModel.findOne({ id });
       if (user === null) {
-        throw errors.ErrNotFound;
+        throw new ErrNotFound();
       }
 
       // Date comparisons are difficult when using MongoDB. Javascript will
@@ -125,12 +125,16 @@ class UsersService {
       );
     }
 
-    // Emit that the user username status was changed.
-    await events.emitAsync(USERS_SUSPENSION_CHANGE, user, {
-      until,
-      message,
-      assignedBy,
-    });
+    // Check to see if the user was suspended now and is currently suspended.
+    if (user.suspended && message && message.length > 0) {
+      await UsersService.sendEmail(user, {
+        template: 'plain',
+        locals: {
+          body: message,
+        },
+        subject: 'Your account has been suspended',
+      });
+    }
 
     return user;
   }
@@ -161,10 +165,10 @@ class UsersService {
         runValidators: true,
       }
     );
-    if (user === null) {
+    if (!user) {
       user = await UserModel.findOne({ id });
-      if (user === null) {
-        throw errors.ErrNotFound;
+      if (!user) {
+        throw new ErrNotFound();
       }
 
       if (user.status.banned.status === status) {
@@ -174,12 +178,16 @@ class UsersService {
       throw new Error('ban status change edit failed for an unknown reason');
     }
 
-    // Emit that the user ban status was changed.
-    await events.emitAsync(USERS_BAN_CHANGE, user, {
-      status,
-      assignedBy,
-      message,
-    });
+    // Check to see if the user was banned now and is currently banned.
+    if (user.banned && status && message && message.length > 0) {
+      await UsersService.sendEmail(user, {
+        template: 'plain',
+        locals: {
+          body: message,
+        },
+        subject: 'Your account has been banned',
+      });
+    }
 
     return user;
   }
@@ -211,7 +219,7 @@ class UsersService {
     if (user === null) {
       user = await UserModel.findOne({ id });
       if (user === null) {
-        throw errors.ErrNotFound;
+        throw new ErrNotFound();
       }
 
       if (user.status.username.status === status) {
@@ -222,12 +230,6 @@ class UsersService {
         'username status change edit failed for an unknown reason'
       );
     }
-
-    // Emit that the user username status was changed.
-    await events.emitAsync(USERS_USERNAME_STATUS_CHANGE, user, {
-      status,
-      assignedBy,
-    });
 
     return user;
   }
@@ -272,27 +274,24 @@ class UsersService {
       if (!user) {
         user = await UsersService.findById(id);
         if (user === null) {
-          throw errors.ErrNotFound;
+          throw new ErrNotFound();
         }
 
         if (user.status.username.status !== fromStatus) {
-          throw errors.ErrPermissionUpdateUsername;
+          throw new ErrPermissionUpdateUsername();
         }
 
         if (!resetAllowed && user.username === username) {
-          throw errors.ErrSameUsernameProvided;
+          throw new ErrSameUsernameProvided();
         }
 
         throw new Error('edit username failed for an unexpected reason');
       }
 
-      // Emit that the user username status was changed.
-      await events.emitAsync(USERS_USERNAME_STATUS_CHANGE, user, toStatus);
-
       return user;
     } catch (err) {
       if (err.code === 11000) {
-        throw errors.ErrUsernameTaken;
+        throw new ErrUsernameTaken();
       }
 
       throw err;
@@ -333,7 +332,7 @@ class UsersService {
     }
 
     if (attempts >= RECAPTCHA_INCORRECT_TRIGGER) {
-      throw errors.ErrLoginAttemptMaximumExceeded;
+      throw new ErrLoginAttemptMaximumExceeded();
     }
   }
 
@@ -363,12 +362,76 @@ class UsersService {
   }
 
   /**
+   * Creates the initial username for an external account. Searches to make
+   * sure username not already used. Adds a random number if username already
+   * in use.
+   */
+  static async getInitialUsername(username) {
+    const MAX_ATTEMPTS = 10;
+    const END_NUMBER_MAX = 99999;
+    const GROUP_ATTEMPTS = 50;
+
+    // Cast the original username.
+    const castedName = UsersService.castUsername(username);
+    const lowercaseUsername = castedName.toLowerCase();
+
+    // Try to see if our first guess has been taken.
+    const existingUserWithName = await UserModel.findOne({
+      lowercaseUsername,
+    });
+    if (!existingUserWithName) {
+      return castedName;
+    }
+
+    // Our first username was taken, lets try to find a non-taken name.
+    for (let i = 0; i < MAX_ATTEMPTS; i++) {
+      // Generate `GROUP_ATTEMPTS` guesses for the username.
+      const usernameGuesses = Array.from(Array(GROUP_ATTEMPTS)).map(
+        () => `${castedName}_${random(0, END_NUMBER_MAX)}`
+      );
+
+      // Map them all to lowercase.
+      const lowercaseUsernameGuesses = usernameGuesses.map(guess =>
+        guess.toLowerCase()
+      );
+
+      // See if any of these users aren't taken already.
+      const existingUsernames = (await UserModel.find(
+        {
+          lowercaseUsername: { $in: lowercaseUsernameGuesses },
+        },
+        { lowercaseUsername: 1 }
+      )).map(({ lowercaseUsername }) => lowercaseUsername);
+      if (existingUsernames.length === lowercaseUsernameGuesses.length) {
+        // The number of found users is the same as the number of username
+        // guesses, aka, all the usernames are taken.
+        continue;
+      }
+
+      // At least one of the usernames wasn't taken! Let's filter this to only
+      // include unused usernames and grab one random entry from the list.
+      const foundLowercaseUsernameIndex = lowercaseUsernameGuesses.indexOf(
+        sample(difference(lowercaseUsernameGuesses, existingUsernames))
+      );
+
+      // Now we get the uppercase version of that string.
+      return usernameGuesses[foundLowercaseUsernameIndex];
+    }
+
+    throw new Error(
+      'cannot find free name after ' +
+        (MAX_ATTEMPTS * GROUP_ATTEMPTS + 1) +
+        ' tries'
+    );
+  }
+
+  /**
    * Finds a user given a social profile and if the user does not exist, creates
    * them.
    * @param  {Object}   profile - User social/external profile
    * @param  {Function} done    [description]
    */
-  static async findOrCreateExternalUser({ id, provider, displayName }) {
+  static async findOrCreateExternalUser(ctx, id, provider, displayName) {
     let user = await UserModel.findOne({
       profiles: {
         $elemMatch: {
@@ -384,7 +447,7 @@ class UsersService {
     // User does not exist and need to be created.
 
     // Create an initial username for the user.
-    let username = UsersService.castUsername(displayName);
+    let username = await UsersService.getInitialUsername(displayName);
 
     // The user was not found, lets create them!
     user = new UserModel({
@@ -405,15 +468,16 @@ class UsersService {
     await user.save();
 
     // Emit that the user was created.
-    await events.emitAsync(USERS_NEW, user);
+    ctx.pubsub.publish('userCreated', user);
 
     return user;
   }
 
   /**
    * sendEmailConfirmation sends a confirmation email to the user.
+   *
    * @param {String}     user  the user to send the email to
-   * @param {String}     email   the email for the user to send the email to
+   * @param {String}     email the email for the user to send the email to
    */
   static async sendEmailConfirmation(user, email, redirectURI = ROOT_URL) {
     let token = await UsersService.createEmailConfirmToken(
@@ -430,21 +494,14 @@ class UsersService {
         email,
       },
       subject: i18n.t('email.confirm.subject'),
-      to: email,
+      email,
     });
   }
 
   static async sendEmail(user, options) {
-    const email = user.firstEmail;
-    if (!email) {
-      // Rather than throwing an error here, we'll
-      console.warn(new Error('user does not have an email'));
-      return;
-    }
-
     return mailer.send(
       merge({}, options, {
-        to: email,
+        user: user.id,
       })
     );
   }
@@ -464,23 +521,6 @@ class UsersService {
   }
 
   /**
-   * Creates local users.
-   * @param  {Array} users Users to create
-   * @return {Promise}     Resolves with the users that were created
-   */
-  static createLocalUsers(users) {
-    return Promise.all(
-      users.map(user => {
-        return UsersService.createLocalUser(
-          user.email,
-          user.password,
-          user.username
-        );
-      })
-    );
-  }
-
-  /**
    * Check the requested username for blocked words and special chars
    * @param  {String}   username              word to be checked for profanity
    * @param  {Boolean}  checkAgainstWordlist  enables cheching against the wordlist
@@ -490,11 +530,11 @@ class UsersService {
     const onlyLettersNumbersUnderscore = /^[A-Za-z0-9_]+$/;
 
     if (!username) {
-      throw errors.ErrMissingUsername;
+      throw new ErrMissingUsername();
     }
 
     if (!onlyLettersNumbersUnderscore.test(username)) {
-      throw errors.ErrSpecialChars;
+      throw new ErrSpecialChars();
     }
 
     if (checkAgainstWordlist) {
@@ -514,26 +554,26 @@ class UsersService {
    */
   static isValidPassword(password) {
     if (!password) {
-      return Promise.reject(errors.ErrMissingPassword);
+      throw new ErrMissingPassword();
     }
 
     if (password.length < 8) {
-      return Promise.reject(errors.ErrPasswordTooShort);
+      throw new ErrPasswordTooShort();
     }
 
-    return Promise.resolve(password);
+    return password;
   }
 
   /**
    * Creates the local user with a given email, password, and name.
+   * @param  {Object}   ctx         application context for the request
    * @param  {String}   email       email of the new user
    * @param  {String}   password    plaintext password of the new user
-   * @param  {String}   username name of the display user
-   * @param  {Function} done        callback
+   * @param  {String}   username    name of the display user
    */
-  static async createLocalUser(email, password, username) {
+  static async createLocalUser(ctx, email, password, username) {
     if (!email) {
-      throw errors.ErrMissingEmail;
+      throw new ErrMissingEmail();
     }
 
     email = email.toLowerCase().trim();
@@ -571,15 +611,15 @@ class UsersService {
     } catch (err) {
       if (err.code === 11000) {
         if (err.message.match('Username')) {
-          throw errors.ErrUsernameTaken;
+          throw new ErrUsernameTaken();
         }
-        throw errors.ErrEmailTaken;
+        throw new ErrEmailTaken();
       }
       throw err;
     }
 
     // Emit that the user was created.
-    await events.emitAsync(USERS_NEW, user);
+    ctx.pubsub.publish('userCreated', user);
 
     return user;
   }
@@ -653,9 +693,7 @@ class UsersService {
    */
   static async createPasswordResetToken(email, loc) {
     if (!email || typeof email !== 'string') {
-      throw new Error(
-        'email is required when creating a JWT for resetting passord'
-      );
+      throw new ErrMissingEmail();
     }
 
     email = email.toLowerCase();
@@ -812,7 +850,7 @@ class UsersService {
 
     // Ensure that the user email hasn't already been verified.
     if (profile && profile.metadata && profile.metadata.confirmed_at) {
-      throw new Error('email address already confirmed');
+      throw new ErrEmailAlreadyVerified();
     }
 
     return JWT_SECRET.sign(
@@ -850,16 +888,16 @@ class UsersService {
       },
     });
     if (!user) {
-      throw errors.ErrNotFound;
+      throw new ErrNotFound();
     }
 
     const profile = user.profiles.find(({ id }) => id === decoded.email);
     if (!profile) {
-      throw errors.ErrNotFound;
+      throw new ErrNotFound();
     }
 
     if (profile.metadata && profile.metadata.confirmed_at !== null) {
-      throw errors.ErrEmailVerificationToken;
+      throw new ErrEmailAlreadyVerified();
     }
 
     return decoded;
@@ -918,7 +956,7 @@ class UsersService {
 
     const users = await UsersService.findByIdArray(usersToIgnore);
     if (some(users, user => user.isStaff())) {
-      throw errors.ErrCannotIgnoreStaff;
+      throw new ErrCannotIgnoreStaff();
     }
 
     return UserModel.update(
@@ -951,38 +989,6 @@ class UsersService {
 }
 
 module.exports = UsersService;
-
-events.on(USERS_BAN_CHANGE, async (user, { status, message }) => {
-  // Check to see if the user was banned now and is currently banned.
-  if (user.banned && status && message && message.length > 0) {
-    await UsersService.sendEmail(user, {
-      template: 'plain',
-      locals: {
-        body: message,
-      },
-      subject: 'Your account has been banned',
-    });
-  }
-});
-
-events.on(USERS_SUSPENSION_CHANGE, async (user, { until, message }) => {
-  // Check to see if the user was suspended now and is currently suspended.
-  if (
-    user.suspended &&
-    until !== null &&
-    until > Date.now() &&
-    message &&
-    message.length > 0
-  ) {
-    await UsersService.sendEmail(user, {
-      template: 'plain',
-      locals: {
-        body: message,
-      },
-      subject: 'Your account has been suspended',
-    });
-  }
-});
 
 // Extract all the tokenUserNotFound plugins so we can integrate with other
 // providers.

@@ -1,4 +1,4 @@
-const errors = require('../../errors');
+const { ErrNotAuthorized } = require('../../errors');
 const {
   UPDATE_ASSET_SETTINGS,
   UPDATE_ASSET_STATUS,
@@ -56,12 +56,25 @@ const closeNow = async (ctx, id) =>
     }
   );
 
+/**
+ * scrapeAsset will force scrape an asset.
+ *
+ * @param {Object} ctx graphql context
+ * @param {String} id the asset's id to scrape
+ */
+const scrapeAsset = async (ctx, id) => {
+  const { connectors: { services: { Scraper } } } = ctx;
+
+  return Scraper.create(ctx, id);
+};
+
 module.exports = ctx => {
   let mutators = {
     Asset: {
-      updateSettings: () => Promise.reject(errors.ErrNotAuthorized),
-      updateStatus: () => Promise.reject(errors.ErrNotAuthorized),
-      closeNow: () => Promise.reject(errors.ErrNotAuthorized),
+      updateSettings: () => Promise.reject(new ErrNotAuthorized()),
+      updateStatus: () => Promise.reject(new ErrNotAuthorized()),
+      closeNow: () => Promise.reject(new ErrNotAuthorized()),
+      scrape: () => Promise.reject(new ErrNotAuthorized()),
     },
   };
 
@@ -75,6 +88,7 @@ module.exports = ctx => {
       mutators.Asset.updateStatus = (id, status) =>
         updateStatus(ctx, id, status);
       mutators.Asset.closeNow = id => closeNow(ctx, id);
+      mutators.Asset.scrape = id => scrapeAsset(ctx, id);
     }
   }
 

@@ -1,17 +1,18 @@
 const app = require('./app');
-const debug = require('debug')('talk:cli:serve');
-const errors = require('./errors');
+const { ErrSettingsInit, ErrInstallLock } = require('./errors');
 const { createServer } = require('http');
-const scraper = require('./services/scraper');
-const mailer = require('./services/mailer');
+const jobs = require('./jobs');
 const MigrationService = require('./services/migration');
 const SetupService = require('./services/setup');
+const PluginsService = require('./services/plugins');
 const kue = require('./services/kue');
 const mongoose = require('./services/mongoose');
 const cache = require('./services/cache');
 const util = require('./bin/util');
 const { createSubscriptionManager } = require('./graph/subscriptions');
 const { PORT } = require('./config');
+const { createLogger } = require('./services/logging');
+const logger = createLogger('jobs');
 
 const port = normalizePort(PORT);
 
@@ -70,15 +71,20 @@ function normalizePort(val) {
  */
 
 async function onListening() {
-  let addr = server.address();
-  let bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr.port}`;
-  console.log(`API Server Listening on ${bind}`);
+  logger.info({ port }, 'API server started');
 }
 
 /**
  * Start the app.
  */
-async function serve({ jobs = false, websockets = false } = {}) {
+async function serve({
+  jobs: enableJobs = false,
+  disabledJobs = [],
+  websockets = false,
+} = {}) {
+  // Run the deferred plugins.
+  PluginsService.runDeferred();
+
   // Start the cache instance.
   await cache.init();
 
@@ -88,19 +94,17 @@ async function serve({ jobs = false, websockets = false } = {}) {
     // just means we don't have to check that the migrations have run.
     await SetupService.isAvailable();
 
-    debug('setup is currently available, migrations not being checked');
-  } catch (e) {
+    logger.info('Setup is currently available, migrations not being checked');
+  } catch (err) {
     // Check the error.
-    switch (e) {
-      case errors.ErrInstallLock:
-      case errors.ErrSettingsInit:
-        debug('setup is not currently available, migrations now being checked');
-
-        // The error was expected, just continue.
-        break;
-      default:
-        // The error was not expected, throw the error!
-        throw e;
+    if (err instanceof ErrInstallLock || err instanceof ErrSettingsInit) {
+      // The error was expected, just continue.
+      logger.info(
+        'Setup is not currently available, migrations now being checked'
+      );
+    } else {
+      // The error was not expected, throw the error!
+      throw err;
     }
 
     // Now try and check the migration status.
@@ -112,7 +116,7 @@ async function serve({ jobs = false, websockets = false } = {}) {
       process.exit(1);
     }
 
-    debug('migrations do not have to be run');
+    logger.info('Migrations do not have to be run');
   }
 
   /**
@@ -124,7 +128,7 @@ async function serve({ jobs = false, websockets = false } = {}) {
   server.listen(port, () => {
     // Mount the websocket server if requested.
     if (websockets) {
-      console.log(`Websocket Server Listening on ${port}`);
+      logger.info({ port }, 'Websocket server started');
 
       // Mount the subscriptions server on the application server.
       createSubscriptionManager(server);
@@ -132,19 +136,16 @@ async function serve({ jobs = false, websockets = false } = {}) {
   });
 
   // Enable job processing on the thread if enabled.
-  if (jobs) {
-    // Start the scraper processor.
-    scraper.process();
-
+  if (enableJobs) {
     // Start the mail processor.
-    mailer.process();
+    jobs.process(...disabledJobs);
   }
 
   // Define a safe shutdown function to call in the event we need to shutdown
   // because the node hooks are below which will interrupt the shutdown process.
   // Shutdown the mongoose connection, the app server, and the scraper.
   util.onshutdown([
-    () => (jobs ? kue.Task.shutdown() : null),
+    () => (enableJobs ? kue.Task.shutdown() : null),
     () => mongoose.disconnect(),
     () => server.close(),
   ]);

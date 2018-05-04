@@ -1,9 +1,8 @@
 const SetupService = require('../services/setup');
 const authentication = require('../middleware/authentication');
+const logging = require('../middleware/logging');
 const cookieParser = require('cookie-parser');
-const debug = require('debug')('talk:routes');
-const enabled = require('debug').enabled;
-const errors = require('../errors');
+const { TalkError, ErrNotFound } = require('../errors');
 const express = require('express');
 const i18n = require('../middleware/i18n');
 const path = require('path');
@@ -14,6 +13,8 @@ const staticMiddleware = require('express-static-gzip');
 const { DISABLE_STATIC_SERVER } = require('../config');
 const { passport } = require('../services/passport');
 const { MOUNT_PATH } = require('../url');
+const url = require('url');
+const context = require('../middleware/context');
 
 const router = express.Router();
 
@@ -31,8 +32,8 @@ if (!DISABLE_STATIC_SERVER) {
   /**
    * Redirect old embed calls.
    */
-  const oldEmbed = path.resolve(MOUNT_PATH, 'embed.js');
-  const newEmbed = path.resolve(MOUNT_PATH, 'static/embed.js');
+  const oldEmbed = url.resolve(MOUNT_PATH, 'embed.js');
+  const newEmbed = url.resolve(MOUNT_PATH, 'static/embed.js');
   router.get('/embed.js', (req, res) => {
     console.warn(
       `deprecation warning: ${oldEmbed} will be phased out soon, please replace calls from ${oldEmbed} to ${newEmbed}`
@@ -101,9 +102,12 @@ plugins.get('server', 'passport').forEach(plugin => {
 // Setup the PassportJS Middleware.
 router.use(passport.initialize());
 
+// Setup the Graph Context on the router.
+router.use(authentication, context);
+
 // Attach the authentication middleware, this will be responsible for decoding
 // (if present) the JWT on the request.
-router.use('/api', authentication, require('./api'));
+router.use('/api', require('./api'));
 
 //==============================================================================
 // DEVELOPMENT ROUTES
@@ -129,24 +133,15 @@ if (process.env.NODE_ENV !== 'production') {
   router.get('/', async (req, res, next) => {
     try {
       await SetupService.isAvailable();
-      return res.redirect('/admin/install');
+      return res.redirect(url.resolve(MOUNT_PATH, 'admin/install'));
     } catch (e) {
-      return res.redirect('/admin');
+      return res.redirect(url.resolve(MOUNT_PATH, 'admin'));
     }
   });
 }
 
-//==============================================================================
-// PLUGIN ROUTES
-//==============================================================================
-
-// Inject server route plugins.
-plugins.get('server', 'router').forEach(plugin => {
-  debug(`added plugin '${plugin.plugin.name}'`);
-
-  // Pass the root router to the plugin to mount it's routes.
-  plugin.router(router);
-});
+// Mount the plugin routes.
+router.use(require('./plugins'));
 
 //==============================================================================
 // ERROR HANDLING
@@ -154,19 +149,16 @@ plugins.get('server', 'router').forEach(plugin => {
 
 // Catch 404 and forward to error handler.
 router.use((req, res, next) => {
-  next(errors.ErrNotFound);
+  next(new ErrNotFound());
 });
+
+// Add logging for errors.
+router.use(logging.error);
 
 // General API error handler. Respond with the message and error if we have it
 // while returning a status code that makes sense.
 router.use('/api', (err, req, res, next) => {
-  if (err !== errors.ErrNotFound) {
-    if (process.env.NODE_ENV !== 'test' || enabled('talk:errors')) {
-      console.error(err);
-    }
-  }
-
-  if (err instanceof errors.APIError) {
+  if (err instanceof TalkError) {
     res.status(err.status).json({
       message: res.locals.t(`error.${err.translation_key}`),
       error: err,
@@ -177,11 +169,7 @@ router.use('/api', (err, req, res, next) => {
 });
 
 router.use('/', (err, req, res, next) => {
-  if (err !== errors.ErrNotFound) {
-    console.error(err);
-  }
-
-  if (err instanceof errors.APIError) {
+  if (err instanceof TalkError) {
     res.status(err.status);
     res.render('error', {
       message: res.locals.t(`error.${err.translation_key}`),

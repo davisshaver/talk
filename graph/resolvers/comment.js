@@ -1,4 +1,14 @@
-const { decorateWithTags } = require('./util');
+const { property } = require('lodash');
+const {
+  SEARCH_ACTIONS,
+  SEARCH_COMMENT_STATUS_HISTORY,
+  VIEW_BODY_HISTORY,
+} = require('../../perms/constants');
+const {
+  decorateWithTags,
+  decorateWithPermissionCheck,
+  checkSelfField,
+} = require('./util');
 
 const Comment = {
   hasParent({ parent_id }) {
@@ -29,15 +39,8 @@ const Comment = {
 
     return Comments.getByQuery(query);
   },
-  replyCount({ reply_count }) {
-    // A simple remap from the underlying database model to the graph model.
-    return reply_count;
-  },
-  actions({ id }, _, { user, loaders: { Actions } }) {
-    if (!user || !user.can('SEARCH_ACTIONS')) {
-      return null;
-    }
-
+  replyCount: property('reply_count'),
+  actions({ id }, _, { loaders: { Actions } }) {
     return Actions.getByID.load(id);
   },
   action_summaries(comment, _, { loaders: { Actions } }) {
@@ -64,5 +67,20 @@ const Comment = {
 
 // Decorate the Comment type resolver with a tags field.
 decorateWithTags(Comment);
+
+// Protect direct action and status history access.
+decorateWithPermissionCheck(Comment, {
+  actions: [SEARCH_ACTIONS],
+  status_history: [SEARCH_COMMENT_STATUS_HISTORY],
+});
+
+// Protect privileged fields.
+decorateWithPermissionCheck(
+  Comment,
+  {
+    body_history: [VIEW_BODY_HISTORY],
+  },
+  checkSelfField('author_id')
+);
 
 module.exports = Comment;
