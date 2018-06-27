@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import styles from './StorySearch.css';
 import { Button, Spinner, Icon } from 'coral-ui';
 import Story from './Story';
+import t from 'coral-framework/services/i18n';
 
 const StorySearch = props => {
   const { root: { assets }, data: { loading } } = props;
@@ -33,14 +34,14 @@ const StorySearch = props => {
               onClick={props.search}
               raised
             >
-              Search
+              {t('streams.search')}
             </Button>
           </div>
           <div className={styles.results}>
             {props.assetId && (
               <div className={styles.cta}>
                 <a onClick={props.goToModerateAll}>
-                  Moderate comments on All Stories
+                  {t('moderate_all_streams')}
                 </a>
               </div>
             )}
@@ -48,13 +49,15 @@ const StorySearch = props => {
               {props.moderation.storySearchString ? (
                 <div className={styles.searchResults}>
                   <Icon name="search" />
-                  <span className={styles.headlineRecent}>Search Results</span>
+                  <span className={styles.headlineRecent}>
+                    {t('streams.search_results')}
+                  </span>
                 </div>
               ) : (
                 <div className={styles.searchResults}>
                   <Icon name="access_time" />
                   <span className={styles.headlineRecent}>
-                    Most Recent Stories
+                    {t('streams.most_recent_stories')}
                   </span>
                 </div>
               )}
@@ -82,7 +85,9 @@ const StorySearch = props => {
               )}
 
               {assets.nodes.length === 0 && (
-                <div className={styles.noResults}>No results</div>
+                <div className={styles.noResults}>
+                  {t('streams.search_results')}
+                </div>
               )}
             </div>
           </div>

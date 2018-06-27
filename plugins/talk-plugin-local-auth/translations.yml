@@ -47,7 +47,7 @@ en:
       incorrect_password: "Incorrect Password"
       confirm_change: "Confirm Change"
       cancel: "Cancel"
-      change_email_msg: "Email Address Changed - Your email address has been successfully changed. This email address will now be used for signing in and email notifications."
+      change_email_msg: "Email Address Changed. This email address will now be used for signing in and email notifications."
     add_email:
       add_email_address: "Add Email Address"
       enter_email_address: "Enter Email Address:"
@@ -55,6 +55,7 @@ en:
       confirm_email_address: "Confirm Email Address:"
       email_does_not_match: "Email Address does not match"
       insert_password: "Insert Password:"
+      confirm_password: "Confirm Password:"
       required_field: "This field is required"
       done: "Done"
       content:
@@ -140,7 +141,7 @@ de:
         item_3: "Kommentar-Benachrichtigungen erhalten, die Sie explizit angefordert haben"
       verify:
         title: "E-Mail-Adresse bestätigen"
-        description:  "Wir haben einen E-Mail an {0} geschickt. Bitte bestätigen Sie Ihre E-Mail-Adresse, um damit Benachrichtigungen über Änderungen am Benutzerkonto zu erhalten."
+        description:  "Wir haben eine E-Mail an {0} geschickt. Bitte bestätigen Sie Ihre E-Mail-Adresse, um damit Benachrichtigungen über Änderungen am Benutzerkonto zu erhalten."
       added:
         title: "E-Mail-Adresse hinzugefügt"
         description: "Ihre E-Mail-Adresse wurde dem Benutzerkonto hinzugefügt."

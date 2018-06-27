@@ -68,6 +68,7 @@ class KarmaTooltip extends React.Component {
                 className={styles.link}
                 href={t('user_detail.karma_docs_link')}
                 target="_blank"
+                rel="noopener noreferrer"
               >
                 {t('user_detail.learn_more')}
               </a>
