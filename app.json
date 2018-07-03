@@ -18,6 +18,10 @@
             "value": "",
             "required": true
         },
+        "REWRITE_ENV_SILENT": {
+            "value": true,
+            "required": true
+        },
         "MAILGUN_SMTP_PASSWORD": {
             "value": "",
             "required": true
