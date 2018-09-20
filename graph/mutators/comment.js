@@ -279,13 +279,28 @@ const setStatus = async (ctx, { id, status }) => {
  */
 const editComment = async (
   ctx,
-  { id, asset_id, edit: { body, metadata = {} } }
+  {
+    id,
+    asset_id,
+    edit: {
+      body,
+      metadata = {},
+      status: commentStatus,
+      actions: commentActions = [],
+    },
+  }
 ) => {
   const { connectors: { services: { Moderation } } } = ctx;
 
   // Build up the new comment we're setting. We need to check this with
   // moderation now.
-  let comment = { id, asset_id, body };
+  let comment = {
+    id,
+    asset_id,
+    body,
+    status: commentStatus,
+    actions: commentActions,
+  };
 
   // Determine the new status of the comment.
   const { actions, status } = await Moderation.process(ctx, comment);

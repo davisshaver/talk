@@ -75,10 +75,15 @@ let TIMEAGO_INSTANCE;
 // detectLanguage will try to get the locale from storage if available,
 // otherwise will try to get it from the navigator, otherwise, it will fallback
 // to the default language.
-const detectLanguage = () =>
-  first(
+const detectLanguage = () => {
+  var browserLanguages = navigator.languages;
+  //IE11 and MS-EDGE do not provide navigator.languages
+  if (!browserLanguages) {
+    browserLanguages = [navigator.language];
+  }
+  return first(
     negotiateLanguages(
-      navigator.languages,
+      browserLanguages,
       whitelistedLanguages || supportedLocales,
       {
         defaultLocale,
@@ -86,6 +91,7 @@ const detectLanguage = () =>
       }
     )
   );
+};
 
 export function setupTranslations() {
   // locale
@@ -100,10 +106,10 @@ export function setupTranslations() {
   ta.register('da', daTA);
   ta.register('de', deTA);
   ta.register('fr', frTA);
-  ta.register('nl-NL', nlTA);
-  ta.register('pt-BR', pt_BRTA);
-  ta.register('zh-CN', zh_CNTA);
-  ta.register('zh-TW', zh_TWTA);
+  ta.register('nl_NL', nlTA);
+  ta.register('pt_BR', pt_BRTA);
+  ta.register('zh_CN', zh_CNTA);
+  ta.register('zh_TW', zh_TWTA);
   TIMEAGO_INSTANCE = ta();
 }
 
