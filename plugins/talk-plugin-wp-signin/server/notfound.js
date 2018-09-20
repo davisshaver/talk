@@ -22,7 +22,7 @@ module.exports = {
           },
           {
             provider: 'local',
-            id: jwt.email,
+            id: jwt.sub,
             username: jwt.un,
           },
         ],
