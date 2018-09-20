@@ -3,6 +3,21 @@ const UserModel = require('../../../models/user');
 
 module.exports = {
   tokenUserNotFound: async ({ jwt }) => {
+    let emailUser = await UserModel.findOne({'email': jwt.email});
+    if (emailUser) {
+      return emailUser;
+    }
+    let profileUser = await UserModel.findOne({
+      profiles: {
+        $elemMatch: {
+          id: jwt.email,
+          provider: 'local'
+        }
+      }
+    });
+    if (profileUser) {
+      return profileUser;
+    }
     const username = await UsersService.getInitialUsername(jwt.un);
     let user = await UserModel.findOneAndUpdate(
       {
@@ -17,15 +32,15 @@ module.exports = {
         profiles: [
           {
             provider: 'WordPress',
-            id: `${jwt.site}-${jwt.id}`,
+            id: jwt.sub,
             username: jwt.un,
           },
           {
             provider: 'local',
-            id: jwt.sub,
+            id: jwt.email,
             username: jwt.un,
           },
-        ],
+        ],  
         provider: 'local',
         status: {
           username: {
@@ -37,9 +52,7 @@ module.exports = {
             ],
           },
         },
-        metadata: {
-          displayName: jwt.un,
-        },
+        displayName: jwt.un,
       },
       {
         setDefaultsOnInsert: true,
