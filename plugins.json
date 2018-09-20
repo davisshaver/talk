@@ -5,7 +5,8 @@
     "talk-plugin-featured-comments",
     "talk-plugin-offtopic",
     "talk-plugin-respect",
-    "talk-plugin-toxic-comments"
+    "talk-plugin-toxic-comments",
+    "talk-plugin-wp-signin",
   ],
   "client": [
     "talk-plugin-auth",
