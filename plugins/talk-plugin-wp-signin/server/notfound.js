@@ -32,7 +32,7 @@ module.exports = {
         profiles: [
           {
             provider: 'WordPress',
-            id: jwt.sub,
+            id: `${jwt.site}-${jwt.id}`,
             username: jwt.un,
           },
           {
