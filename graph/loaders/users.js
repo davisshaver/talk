@@ -4,10 +4,14 @@ const { SEARCH_OTHER_USERS } = require('../../perms/constants');
 const { escapeRegExp } = require('../../services/regex');
 
 const mergeState = (query, state) => {
-  const { status } = state;
+  const { role, status } = state;
+
+  if (role) {
+    query.merge({ role });
+  }
 
   if (status) {
-    const { username, banned, suspended } = status;
+    const { username, banned, suspended, alwaysPremod } = status;
 
     if (typeof username !== 'undefined' && username && username.length > 0) {
       query.merge({
@@ -20,6 +24,12 @@ const mergeState = (query, state) => {
     if (typeof banned !== 'undefined' && banned !== null) {
       query.merge({
         'status.banned.status': banned,
+      });
+    }
+
+    if (typeof alwaysPremod !== 'undefined' && alwaysPremod !== null) {
+      query.merge({
+        'status.alwaysPremod.status': alwaysPremod,
       });
     }
 

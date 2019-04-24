@@ -132,10 +132,11 @@ de:
     enable_questionbox: 'Stellen Sie den Lesern eine Frage'
     enable_questionbox_description: 'Diese Frage erscheint am Anfang des Kommentarbereichs. Regen Sie eine Diskussion an.'
     hours: Stunden
-    include_comment_stream: 'Einleitung zum Kommentarbereich'
-    include_comment_stream_desc: 'Verfassen Sie eine Einleitung, die über jedem Kommentarbereich erscheint. Nützlich z.B. für Community-Richtlinien.'
+    code_of_conduct_summary: 'Einleitung zum Kommentarbereich'
+    code_of_conduct_summary_desc: 'Verfassen Sie eine Einleitung, die über jedem Kommentarbereich erscheint. Nützlich z.B. für Community-Richtlinien.'
     include_question_here: 'Stellen Sie Ihre Frage hier:'
     include_text: 'Fügen Sie Ihren Text hier ein.'
+    include_an_icon: 'Fügen Sie ein Icon hinzu'
     moderate: Moderieren
     moderation_settings: Moderations-Einstellungen
     open: Öffnen
@@ -224,6 +225,7 @@ de:
     CANNOT_IGNORE_STAFF: 'Mitarbeiter können nicht ignoriert werden.'
     COMMENT_PARENT_NOT_VISIBLE: 'Der Kommentar, auf den Sie antworten möchten, wurde entfernt oder existiert nicht.'
     COMMENT_TOO_SHORT: 'Kommentare sollten mehr als ein Zeichen enthalten, bitte überprüfen Sie Ihren Kommentar und probieren Sie es erneut.'
+    COMMENT_TOO_LONG: 'Text überschreitet Zeichenlimit'
     COMMENTING_CLOSED: 'Kommentarbereich ist bereits geschlossen'
     COMMENTING_DISABLED: 'Die Kommentarfunktion ist derzeit abgeschaltet'
     confirm_password: 'Passwörter nicht identisch. Bitte erneut überprüfen'
@@ -273,7 +275,6 @@ de:
     reasons:
       comment:
         banned_word: 'Unzulässiges Wort'
-        body_count: 'Text überschreitet Zeichenlimit'
         comment_noagree: 'Andere Meinung'
         comment_offensive: Unangemessen
         comment_other: Anderes

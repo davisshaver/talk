@@ -159,6 +159,9 @@ const config = {
       'process.env': {
         VERSION: `"${require('./package.json').version}"`,
         NODE_ENV: `${JSON.stringify(process.env.NODE_ENV)}`,
+        TALK_DEFAULT_LAZY_RENDER: `${JSON.stringify(
+          process.env.TALK_DEFAULT_LAZY_RENDER
+        )}`,
       },
     }),
     new webpack.EnvironmentPlugin({
@@ -166,6 +169,7 @@ const config = {
       TALK_THREADING_LEVEL: '3',
       TALK_ADDTL_COMMENTS_ON_LOAD_MORE: '10',
       TALK_ASSET_COMMENTS_LOAD_DEPTH: '10',
+      TALK_ADDTL_REPLIES_ON_LOAD_MORE: '999999',
       TALK_REPLY_COMMENTS_LOAD_DEPTH: '3',
       TALK_DEFAULT_STREAM_TAB: 'all',
       TALK_DEFAULT_LANG: 'en',
@@ -307,19 +311,32 @@ const applyConfig = (entries, root = {}) =>
     config,
     {
       entry: entries.reduce(
-        (entry, { name, path: modulePath, disablePolyfill = false }) => {
-          const entries = [
-            path.join(
-              __dirname,
-              'client/coral-framework/helpers/webpackGlobals'
-            ),
-          ];
-          if (disablePolyfill) {
-            entries.push(modulePath);
-          } else {
-            entries.unshift('babel-polyfill');
-            entries.push(modulePath);
+        (
+          entry,
+          {
+            name,
+            path: modulePath,
+            disablePolyfill = false,
+            disableWebpackGlobals = false,
           }
+        ) => {
+          // Create all the entries to be added to the final build target.
+          const entries = [];
+
+          if (!disablePolyfill) {
+            entries.push('babel-polyfill');
+          }
+
+          if (!disableWebpackGlobals) {
+            entries.push(
+              path.join(
+                __dirname,
+                'client/coral-framework/helpers/webpackGlobals'
+              )
+            );
+          }
+
+          entries.push(modulePath);
 
           entry[name] = entries;
 
@@ -347,7 +364,8 @@ module.exports = [
       {
         name: 'embed',
         path: path.join(__dirname, 'client/coral-embed/src/index'),
-        disablePolyfill: process.env.TALK_DISABLE_EMBED_POLYFILL === 'TRUE',
+        disablePolyfill: true,
+        disableWebpackGlobals: true,
       },
     ],
     {

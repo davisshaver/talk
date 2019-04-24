@@ -634,7 +634,7 @@ export default class Comment extends React.Component {
                       })}
                       onClick={this.onClickEdit}
                     >
-                      Edit
+                      {t('framework.edit')}
                     </a>
                   )}
                 </span>

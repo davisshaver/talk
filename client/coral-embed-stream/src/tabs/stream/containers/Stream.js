@@ -6,6 +6,7 @@ import { bindActionCreators } from 'redux';
 import {
   ADDTL_COMMENTS_ON_LOAD_MORE,
   ASSET_COMMENTS_LOAD_DEPTH,
+  ADDTL_REPLIES_ON_LOAD_MORE,
   THREADING_LEVEL,
 } from '../../../constants/stream';
 import {
@@ -141,7 +142,9 @@ class StreamContainer extends React.Component {
     return this.props.data.fetchMore({
       query: LOAD_MORE_QUERY,
       variables: {
-        limit: parent_id ? 999999 : ADDTL_COMMENTS_ON_LOAD_MORE,
+        limit: parent_id
+          ? ADDTL_REPLIES_ON_LOAD_MORE
+          : ADDTL_COMMENTS_ON_LOAD_MORE,
         cursor: comment.replies.endCursor,
         parent_id,
         asset_id: this.props.asset.id,
@@ -385,6 +388,9 @@ const fragments = {
               status
             }
             banned {
+              status
+            }
+            alwaysPremod {
               status
             }
             suspension {

@@ -157,6 +157,9 @@ const USER_BANNED_SUBSCRIPTION = gql`
           banned {
             status
           }
+          alwaysPremod {
+            status
+          }
           suspension {
             until
           }
@@ -178,6 +181,9 @@ const USER_SUSPENDED_SUBSCRIPTION = gql`
           banned {
             status
           }
+          alwaysPremod {
+            status
+          }
           suspension {
             until
           }
@@ -197,6 +203,9 @@ const USERNAME_REJECTED_SUBSCRIPTION = gql`
             status
           }
           banned {
+            status
+          }
+          alwaysPremod {
             status
           }
           suspension {
@@ -233,6 +242,9 @@ const EMBED_QUERY = gql`
             status
           }
           banned {
+            status
+          }
+          alwaysPremod {
             status
           }
           suspension {

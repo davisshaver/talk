@@ -3,6 +3,13 @@ en:
     sort_comments: 'Sort Comments'
     view_options: 'View Options'
   already_flagged_username: 'You have already flagged this username.'
+  alwayspremoddialog:
+    are_you_sure: 'Are you sure you would like to always premoderate {0}?'
+    always_premod_user: 'Always premoderate user?'
+    cancel: Cancel
+    note: 'Note: {0}'
+    note_always_premod_user: 'Always premoderating this user will place all of their comments in the Pre-Moderate queue.'
+    yes_always_premod_user: 'Yes, always premoderate user'
   bandialog:
     are_you_sure: 'Are you sure you would like to ban {0}?'
     ban_user: 'Ban User?'
@@ -48,6 +55,7 @@ en:
   comment_post_notif_premod: 'Thank you for posting. Our moderation team will review your comment shortly.'
   comment_singular: Comment
   common:
+    contains_link: 'Contains Link'
     copy: Copy
     copied: 'Copied'
     notsupported: 'Not supported'
@@ -62,6 +70,8 @@ en:
     active: Active
     admin: Administrator
     ads_marketing: 'This looks like an ad/marketing'
+    all: 'All'
+    always_premod: 'Always premoderated'
     are_you_sure: 'Are you sure you would like to ban {0}?'
     ban_user: 'Ban User?'
     banned: Banned
@@ -69,6 +79,8 @@ en:
     cancel: Cancel
     commenter: Commenter
     dont_like_username: 'Dislike username'
+    filter_users: 'Filter users'
+    filter_role: Role
     flaggedaccounts: 'Reported Usernames'
     flags: Flags
     impersonating: Impersonation
@@ -85,6 +97,7 @@ en:
     spam_ads: Spam/Ads
     staff: Staff
     status: Status
+    suspended: Suspended
     username_and_email: 'Username and Email'
     yes_ban_user: 'Yes Ban User'
   configure:
@@ -132,8 +145,9 @@ en:
     enable_questionbox: 'Ask Readers a Question'
     enable_questionbox_description: 'This question will appear at the top of this comment stream. Ask readers about a certain issue in the article or pose discussion questions etc.'
     hours: Hours
-    include_comment_stream: 'Include Comment Stream Description for Readers'
-    include_comment_stream_desc: 'Write a message to be added to the top of your comment stream. Pose a topic include community guidelines etc.'
+    code_of_conduct_summary: 'Summary of your Code of Conduct'
+    code_of_conduct_summary_desc: 'This message will appear above every comments stream on your site. Click here to learn more about writing a good code.'
+    include_an_icon: 'Include an Icon'
     include_question_here: 'Write your question here:'
     include_text: 'Include your text here.'
     moderate: Moderate
@@ -205,7 +219,7 @@ en:
       subject: 'Your account has been banned'
     confirm:
       confirm_email: 'Confirm Email'
-      has_been_requested: 'A email confirmation has been requested for the following account:'
+      has_been_requested: 'An email confirmation has been requested for the following account:'
       if_you_did_not: 'If you did not request this, you can safely ignore this email.'
       subject: 'Email Confirmation'
       to_confirm: 'To confirm the account, please visit the following link:'
@@ -229,6 +243,7 @@ en:
     CANNOT_IGNORE_STAFF: 'Cannot ignore Staff members.'
     COMMENT_PARENT_NOT_VISIBLE: 'The comment that you''re replying to has been removed or doesn''t exist.'
     COMMENT_TOO_SHORT: 'Comments should be more than one character, please revise your comment and try again.'
+    COMMENT_TOO_LONG: 'Body exceeds max length'
     COMMENTING_CLOSED: 'Commenting is already closed'
     COMMENTING_DISABLED: 'Commenting is currently disabled on this site'
     confirm_password: 'Passwords don''t match. Please check again'
@@ -244,7 +259,7 @@ en:
     EMAIL_REQUIRED: 'An email address is required'
     EMAIL_VERIFICATION_TOKEN_INVALID: 'Email verification token is invalid.'
     INCORRECT_PASSWORD: 'Incorrect Password'
-    INVALID_ASSET_URL: 'Assert URL is invalid'
+    INVALID_ASSET_URL: 'Asset URL is invalid'
     LOGIN_MAXIMUM_EXCEEDED: 'You have made too many unsuccessful password attempts. Please wait.'
     network_error: 'Failed to connect to server. Check your internet connection and try again.'
     NO_SPECIAL_CHARACTERS: 'Usernames can contain letters numbers and _ only'
@@ -253,7 +268,7 @@ en:
     organization_contact_email: 'Organization email is not valid.'
     organization_name: 'Organization name must only contain letters or numbers.'
     password: 'Password must be at least 8 characters'
-    PAGE_NOT_AVAILABLE_ROLE: 'This page is for team use only. Please contact an administrator if you want to join this team.' 
+    PAGE_NOT_AVAILABLE_ROLE: 'This page is for team use only. Please contact an administrator if you want to join this team.'
     PASSWORD_INCORRECT: 'Your current password was entered incorrectly'
     PASSWORD_LENGTH: 'Password is too short'
     PASSWORD_REQUIRED: 'Must input a password'
@@ -286,7 +301,6 @@ en:
     reasons:
       comment:
         banned_word: 'Banned Word'
-        body_count: 'Body exceeds max length'
         comment_noagree: Disagree
         comment_offensive: Offensive
         comment_other: Other
@@ -313,6 +327,7 @@ en:
     comments: comments
     configure_stream: Configure
     content_not_available: 'This content is not available'
+    edit: Edit
     edit_name:
       button: Submit
       error: 'Usernames can contain letters numbers and _ only'
@@ -375,6 +390,7 @@ en:
     actions: Actions
     all: all
     all_streams: 'All Streams'
+    always_premod_user_actions: 'Always Premod User'
     approve: Approve
     approved: Approved
     ban_user: Ban
@@ -521,6 +537,8 @@ en:
     username_flags: 'flags for this username'
   user_detail:
     all: All
+    always_premod: 'Always Premod User'
+    always_premoded: 'Always premoderated'
     ban: 'Ban User'
     banned: Banned
     email: Email
@@ -532,6 +550,7 @@ en:
     reject_rate: 'Reject Rate'
     reject_username: 'Reject Username'
     rejected: Rejected
+    remove_always_premod: 'Remove Always Premoderate'
     remove_ban: 'Remove Ban'
     remove_suspension: 'Remove Suspension'
     suspend: 'Suspend User'
@@ -545,12 +564,14 @@ en:
     username_rejected: 'Username rejected'
   user_history:
     action: Action
+    always_premod_removed: 'Always premoderate removed'
     ban_removed: 'Ban removed'
     date: Date
     suspended: 'Suspended, {0}'
     suspension_removed: 'Suspension removed'
     system: System
     taken_by: 'Taken By'
+    user_always_premoded: 'User always premoderated'
     user_banned: 'User banned'
     username_status: 'Username {0}'
   user_impersonating: 'This user is impersonating'

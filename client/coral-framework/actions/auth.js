@@ -1,10 +1,5 @@
 import * as actions from '../constants/auth';
-import jwtDecode from 'jwt-decode';
-
-function cleanAuthData(localStorage) {
-  localStorage.removeItem('token');
-  localStorage.removeItem('exp');
-}
+import { setStorageAuthToken, clearStorageAuthToken } from '../services/auth';
 
 export const checkLogin = () => (
   dispatch,
@@ -15,7 +10,7 @@ export const checkLogin = () => (
   rest('/auth')
     .then(result => {
       if (!result.user) {
-        cleanAuthData(localStorage);
+        clearStorageAuthToken(localStorage);
         dispatch(checkLoginSuccess(null));
         client.resetWebsocket();
         return;
@@ -23,12 +18,16 @@ export const checkLogin = () => (
 
       dispatch(checkLoginSuccess(result.user));
       pym.sendMessage('coral-auth-changed', JSON.stringify(result.user));
-      client.resetWebsocket();
+
+      // We don't need to reset the websocket here because if the request
+      // returned that there was a user (which is the case here), then the
+      // original request has already succeeded, or a previous call to a token
+      // set handler has already reset it.
     })
     .catch(error => {
       if (error.status && error.status === 401 && localStorage) {
         // Unauthorized.
-        cleanAuthData(localStorage);
+        clearStorageAuthToken(localStorage);
         client.resetWebsocket();
       } else {
         console.error(error);
@@ -49,13 +48,19 @@ const checkLoginSuccess = user => ({
   user,
 });
 
-export const setAuthToken = token => (dispatch, _, { localStorage }) => {
-  localStorage.setItem('exp', jwtDecode(token).exp);
-  localStorage.setItem('token', token);
+export const setAuthToken = token => (
+  dispatch,
+  _,
+  { localStorage, client }
+) => {
+  setStorageAuthToken(localStorage, token);
 
   // Dispatch the set auth token action. For some browsers and situations, we
   // may not be able to persist the auth token any other way. Keep it in redux!
   dispatch({ type: actions.SET_AUTH_TOKEN, token });
+
+  // Now that we set a token, let's reset the subscriptions.
+  client.resetWebsocket();
 
   dispatch(checkLogin());
 };
@@ -65,9 +70,7 @@ export const handleSuccessfulLogin = (user, token) => (
   _,
   { client, localStorage, postMessage }
 ) => {
-  const { exp } = jwtDecode(token);
-  localStorage.setItem('exp', exp);
-  localStorage.setItem('token', token);
+  setStorageAuthToken(localStorage, token);
 
   // Send the message via the messages service to the window.opener if it
   // exists.
@@ -79,6 +82,7 @@ export const handleSuccessfulLogin = (user, token) => (
     );
   }
 
+  // Now that we just set a token, set the token!
   client.resetWebsocket();
 
   dispatch({
@@ -105,7 +109,7 @@ export const logout = () => async (
   }
 
   // Clear the auth data persisted to localStorage.
-  cleanAuthData(localStorage);
+  clearStorageAuthToken(localStorage);
 
   // Reset the websocket.
   client.resetWebsocket();

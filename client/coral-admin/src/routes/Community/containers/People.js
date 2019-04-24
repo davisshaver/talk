@@ -8,68 +8,76 @@ import {
   withUnbanUser,
   withUnsuspendUser,
   withSetUserRole,
+  withRemoveAlwaysPremodUser,
 } from 'coral-framework/graphql/mutations';
 import { showBanUserDialog } from 'actions/banUserDialog';
 import { showSuspendUserDialog } from 'actions/suspendUserDialog';
+import { showAlwaysPremodUserDialog } from 'actions/alwaysPremodUserDialog';
 import { viewUserDetail } from '../../../actions/userDetail';
 import { appendNewNodes } from 'plugin-api/beta/client/utils';
 import update from 'immutability-helper';
 import { Spinner } from 'coral-ui';
 import withQuery from 'coral-framework/hocs/withQuery';
 
-class PeopleContainer extends React.Component {
+class PeopleContainer extends React.PureComponent {
   timer = null;
 
   state = {
-    searchValue: '',
+    search: '',
+    role: '',
+    status: '',
   };
 
-  onSearchChange = e => {
-    const { value } = e.target;
-    this.setState({ searchValue: value }, () => {
+  statusToQuery = {
+    active: { suspended: false, banned: false },
+    suspended: { suspended: true },
+    banned: { banned: true },
+    alwaysPremod: { alwaysPremod: true },
+  };
+
+  onFilterChange = filter => e =>
+    this.setState({ [filter]: e.target.value }, () => {
       clearTimeout(this.timer);
-      this.timer = setTimeout(() => {
-        this.search(value);
-      }, 350);
+      this.timer = setTimeout(this.filter, 350);
     });
+
+  getFilterState = () => {
+    const { role, status } = this.state;
+    return {
+      status: this.statusToQuery[status] || null,
+      role: role || null,
+    };
   };
 
-  search = async value => {
-    return this.props.data.fetchMore({
-      query: SEARCH_QUERY,
+  filter = () =>
+    this.props.data.fetchMore({
+      query: FILTER_QUERY,
       variables: {
-        value,
+        state: this.getFilterState(),
+        value: this.state.search,
         limit: 10,
       },
-      updateQuery: (previous, { fetchMoreResult: { users } }) => {
-        const updated = update(previous, {
+      updateQuery: (previous, { fetchMoreResult: { users } }) =>
+        update(previous, {
           users: {
-            nodes: {
-              $set: users.nodes,
-            },
+            nodes: { $set: users.nodes },
             hasNextPage: { $set: users.hasNextPage },
             endCursor: { $set: users.endCursor },
           },
-        });
-        return updated;
-      },
+        }),
     });
-  };
 
-  setUserRole = async (id, role) => {
-    await this.props.setUserRole(id, role);
-  };
-
-  loadMore = () => {
-    return this.props.data.fetchMore({
+  loadMore = () =>
+    this.props.data.fetchMore({
       query: LOAD_MORE_QUERY,
       variables: {
-        value: this.state.searchValue,
-        limit: 5,
         cursor: this.props.root.users.endCursor,
+        state: this.getFilterState(),
+        value: this.state.search,
+        limit: 5,
       },
-      updateQuery: (previous, { fetchMoreResult: { users } }) => {
-        const updated = update(previous, {
+      updateQuery: (previous, { fetchMoreResult: { users } }) =>
+        update(previous, {
           users: {
             nodes: {
               $apply: nodes => appendNewNodes(nodes, users.nodes),
@@ -77,11 +85,8 @@ class PeopleContainer extends React.Component {
             hasNextPage: { $set: users.hasNextPage },
             endCursor: { $set: users.endCursor },
           },
-        });
-        return updated;
-      },
+        }),
     });
-  };
 
   render() {
     if (this.props.data.error) {
@@ -98,17 +103,20 @@ class PeopleContainer extends React.Component {
 
     return (
       <People
-        onSearchChange={this.onSearchChange}
+        onFilterChange={this.onFilterChange}
         viewUserDetail={this.props.viewUserDetail}
-        setUserRole={this.setUserRole}
+        setUserRole={this.props.setUserRole}
         showSuspendUserDialog={this.props.showSuspendUserDialog}
         showBanUserDialog={this.props.showBanUserDialog}
+        showAlwaysPremodUserDialog={this.props.showAlwaysPremodUserDialog}
         unbanUser={this.props.unbanUser}
         unsuspendUser={this.props.unsuspendUser}
+        removeAlwaysPremodUser={this.props.removeAlwaysPremodUser}
         data={this.props.data}
         root={this.props.root}
         users={this.props.root.users}
         loadMore={this.loadMore}
+        filters={this.state}
       />
     );
   }
@@ -118,12 +126,91 @@ PeopleContainer.propTypes = {
   setUserRole: PropTypes.func.isRequired,
   unbanUser: PropTypes.func.isRequired,
   unsuspendUser: PropTypes.func.isRequired,
+  removeAlwaysPremodUser: PropTypes.func.isRequired,
   viewUserDetail: PropTypes.func.isRequired,
   showSuspendUserDialog: PropTypes.func,
   showBanUserDialog: PropTypes.func,
+  showAlwaysPremodUserDialog: PropTypes.func,
   data: PropTypes.object,
   root: PropTypes.object,
 };
+
+const LOAD_MORE_QUERY = gql`
+  query TalkAdmin_Community_People_LoadMoreUsers(
+    $limit: Int
+    $cursor: Cursor
+    $value: String
+    $state: UserStateInput
+  ) {
+    users(
+      query: { value: $value, limit: $limit, cursor: $cursor, state: $state }
+    ) {
+      hasNextPage
+      endCursor
+      nodes {
+        __typename
+        id
+        username
+        role
+        created_at
+        profiles {
+          id
+          provider
+        }
+        state {
+          status {
+            banned {
+              status
+            }
+            alwaysPremod {
+              status
+            }
+            suspension {
+              until
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const FILTER_QUERY = gql`
+  query TalkAdmin_Community_People_FilterUsers(
+    $state: UserStateInput
+    $value: String
+    $limit: Int
+  ) {
+    users(query: { state: $state, value: $value, limit: $limit }) {
+      hasNextPage
+      endCursor
+      nodes {
+        __typename
+        id
+        username
+        role
+        created_at
+        profiles {
+          id
+          provider
+        }
+        state {
+          status {
+            banned {
+              status
+            }
+            alwaysPremod {
+              status
+            }
+            suspension {
+              until
+            }
+          }
+        }
+      }
+    }
+  }
+`;
 
 const mapDispatchToProps = dispatch =>
   bindActionCreators(
@@ -131,79 +218,17 @@ const mapDispatchToProps = dispatch =>
       viewUserDetail,
       showSuspendUserDialog,
       showBanUserDialog,
+      showAlwaysPremodUserDialog,
     },
     dispatch
   );
-
-const LOAD_MORE_QUERY = gql`
-  query TalkAdmin_Community_People_LoadMoreUsers(
-    $limit: Int
-    $cursor: Cursor
-    $value: String
-  ) {
-    users(query: { value: $value, limit: $limit, cursor: $cursor }) {
-      hasNextPage
-      endCursor
-      nodes {
-        __typename
-        id
-        username
-        role
-        created_at
-        profiles {
-          id
-          provider
-        }
-        state {
-          status {
-            banned {
-              status
-            }
-            suspension {
-              until
-            }
-          }
-        }
-      }
-    }
-  }
-`;
-
-const SEARCH_QUERY = gql`
-  query TalkAdmin_Community_People_SearchUsers($value: String, $limit: Int) {
-    users(query: { value: $value, limit: $limit }) {
-      hasNextPage
-      endCursor
-      nodes {
-        __typename
-        id
-        username
-        role
-        created_at
-        profiles {
-          id
-          provider
-        }
-        state {
-          status {
-            banned {
-              status
-            }
-            suspension {
-              until
-            }
-          }
-        }
-      }
-    }
-  }
-`;
 
 export default compose(
   connect(null, mapDispatchToProps),
   withSetUserRole,
   withUnsuspendUser,
   withUnbanUser,
+  withRemoveAlwaysPremodUser,
   withQuery(
     gql`
       query TalkAdmin_Community_People {
@@ -223,6 +248,9 @@ export default compose(
             state {
               status {
                 banned {
+                  status
+                }
+                alwaysPremod {
                   status
                 }
                 suspension {

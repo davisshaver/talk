@@ -23,6 +23,10 @@ otherwise the application will fail to start.
 Configure the duration for which comment counts are cached for, parsed by
 [ms](https://www.npmjs.com/package/ms). (Default `1hr`)
 
+## TALK_CONCURRENCY
+
+This environment variable allows multiple worker processes to be spawned to handle traffic. (Default `1`) 
+
 ## TALK_DEFAULT_LANG
 
 This is a **Build Variable** and must be consumed during build. If using the
@@ -246,6 +250,21 @@ Refer to the documentation for [TALK_JWT_ALG](#talk-jwt-alg) for other signing
 methods and other forms of the `TALK_JWT_SECRET`. If you are interested in using
 multiple keys, then refer to [TALK_JWT_SECRETS](#talk-jwt-secrets).
 
+You can also encode your secret as a base64 string (if you are using a symmetric
+algorithm) as long as you prefix it with `base64:`. For example:
+
+```plain
+TALK_JWT_SECRET={"secret": "base64:dGVzdA=="}
+```
+
+Would be the same as:
+
+```plain
+TALK_JWT_SECRET={"secret": "test"}
+```
+
+As `dGVzdA==` is just `test` encoded using base64.
+
 ## TALK_JWT_SECRETS
 
 Used when specifying multiple secrets used for key rotations. This is a JSON
@@ -271,7 +290,6 @@ Note that the secret is stored in a JSON object, keyed by `secret`. This is only
 needed when specifying in the multiple secrets for `TALK_JWT_SECRETS`, but may
 be used to specify the single [TALK_JWT_SECRET](#talk-jwt-secret).
 
-
 When the value of [TALK_JWT_ALG](#talk-jwt-alg) is **not** a `HS*` value, then
 the value of the `TALK_JWT_SECRETS` should take the form:
 
@@ -281,7 +299,6 @@ TALK_JWT_SECRETS=[{"kid": "1", "private": "<my private key>", "public": "<my pub
 
 Refer to the documentation on the [TALK_JWT_ALG](#talk-jwt-alg) for more
 information on what to store in these parameters.
-
 
 ## TALK_JWT_SIGNING_COOKIE_NAME
 
@@ -399,13 +416,19 @@ cannot. You would use this option in the latter situation.
 
 ## TALK_SMTP_FROM_ADDRESS
 
-The email address to send emails from using the SMTP provider in the format:
+The email address to send emails from using the SMTP provider. You can include the name and email address or only provide the email. 
 
 ```plain
-TALK_SMTP_FROM_ADDRESS="The Coral Project" <support@coralproject.net>
+TALK_SMTP_FROM_ADDRESS="The Coral Project" support@coralproject.net
+
+```
+or 
+
+```plain
+TALK_SMTP_FROM_ADDRESS=support@coralproject.net
+
 ```
 
-Including the name and email address.
 
 ## TALK_SMTP_HOST
 
@@ -482,8 +505,9 @@ Could be read as:
   pre-moderated once in order to post freely again. If they instead get rejected
   again, then they must have two of their comments approved in order to get
   added back to the queue.
-- At the moment of writing, behavior is not attached to the flagging
-  reliability, but it is recorded.
+- At the moment of writing, behavior is not attached to reliable commenters
+  as well as the flagging reliability and unreliability. Regardless, 
+  all of these scores are recorded for future implementation.
 
 ## TALK_DISABLE_IGNORE_FLAGS_AGAINST_STAFF
 
@@ -576,3 +600,13 @@ can be used to set an authorization header, or change the user agent. (Default
 ## TALK_SCRAPER_PROXY_URL
 
 Sets a specific HTTP/S proxy to be used by the Asset Scraper using [https-proxy-agent](https://www.npmjs.com/package/https-proxy-agent). (Default `null`)
+
+## TALK_ADDTL_REPLIES_ON_LOAD_MORE
+
+This is a **Build Variable** and must be consumed during build. If using the
+[Docker-onbuild](/talk/installation-from-docker/#onbuild)
+image you can specify it with `--build-arg TALK_ADDTL_REPLIES_ON_LOAD_MORE=3`.
+
+Specifies the number of replies to load for a comment when clicking "Load More".
+It is defaulted quite high to sort of support "loading the rest of the replies".
+(Default `999999`)
