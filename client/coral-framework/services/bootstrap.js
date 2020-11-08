@@ -7,7 +7,6 @@ import { createReduxEmitter } from './events';
 import { createRestClient } from './rest';
 import thunk from 'redux-thunk';
 import { loadTranslations } from './i18n';
-import bowser from 'bowser';
 import noop from 'lodash/noop';
 import { BASE_PATH } from 'coral-framework/constants/url';
 import { createPluginsService } from './plugins';
@@ -65,12 +64,7 @@ const getAuthToken = (store, storage) => {
     }
 
     return token;
-  } else if (
-    !bowser.safari &&
-    !bowser.ios &&
-    storage &&
-    storage.getItem('token')
-  ) {
+  } else if (storage && storage.getItem('token')) {
     // Use local storage auth tokens where there's a stable api.
     return storage.getItem('token');
   }
@@ -159,6 +153,11 @@ export async function createContext({
     token,
   });
 
+  const rest2 = createRestClient({
+    uri: `${BASE_PATH}api/v2`,
+    token,
+  });
+
   const staticConfig = getStaticConfiguration();
   let { LIVE_URI: liveUri, BASE_ORIGIN: origin } = staticConfig;
   if (liveUri == null) {
@@ -193,6 +192,7 @@ export async function createContext({
     plugins,
     eventEmitter,
     rest,
+    rest2,
     graphql,
     notification,
     localStorage,

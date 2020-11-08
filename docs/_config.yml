@@ -6,7 +6,7 @@
 title: Talk Documentation
 subtitle:
 description: >
-  Documentation and guides for Talk from The Coral Project.
+  Documentation and guides for Coral by Vox Media
 google_analytics: UA-73335347-5
 author:
 language: en
@@ -47,7 +47,7 @@ highlight:
 # per_page: Posts displayed per page. (0 = disable pagination)
 # order_by: Posts order. (Order by date descending by default)
 index_generator:
-  path: ''
+  path: ""
 
 # Category & Tag
 default_category: uncategorized
@@ -76,112 +76,161 @@ sidebar:
     - title: GitHub
       url: https://github.com/coralproject/
     - title: Docker
-      url: https://hub.docker.com/r/coralproject/
-    - title: Roadmap
-      url: https://www.pivotaltracker.com/n/projects/1863625
+      url: https://hub.docker.com/r/coralproject/talk/
   side:
-    - title: Installation
+    - title: Version 5+
       children:
-        - title: Talk Quickstart
-          url: /
-        - title: Installation from Docker
-          url: /installation-from-docker/
-        - title: Installation from Source
-          url: /installation-from-source/
-        - title: Planning your Talk Architecture
-          url: /planning-architecture/
-        - title: Pre-Launch Checklist
-          url: /pre-launch-checklist/
-    - title: Configuration
+        - title: Getting started
+          children:
+            - title: Installing
+              url: /
+            - title: Configuration
+              url: /v5/configuration/
+            - title: Admin settings
+              url: /v5/administration/
+            - title: Developing
+              url: /v5/developing/
+            - title: CLI Tools
+              url: /v5/configuration-cli-tools/
+        - title: Integration
+          children:
+            - title: CMS integration
+              url: /v5/integrating/cms/
+            - title: SSO
+              url: /v5/integrating/sso/
+            - title: Other auth options
+              url: /v5/integration/auth/
+            - title: Custom CSS styles
+              url: /v5/css/
+            - title: Emails & notifications
+              url: /v5/notifications/
+            - title: GDPR
+              url: /v5/integrating/gdpr/
+            - title: Comment count
+              url: /v5/integrating/counts/
+            - title: Moderating via Slack
+              url: /v5/integrating/slack/
+            - title: Event tracking
+              url: /v5/integrating/events/
+            - title: SEO & iframes
+              url: /v5/seo/
+        - title: API
+          children:
+            - title: GraphQL Overview
+              url: /v5/api/overview/
+    - title: Version 4
       children:
-        - title: Required Configuration
-          url: /configuration/
-        - title: Advanced Configuration
-          url: /advanced-configuration/
-        - title: Configuration with CLI tools
-          url: /configuration-cli-tools/
-    - title: Integrating
-      children:
-        - title: Authentication
-          url: /integrating/authentication/
-        - title: CMS Integration
-          url: /integrating/cms-integration/
-        - title: Asset Scraping
-          url: /integrating/asset-scraping/
-        - title: Configuring the Comment Stream
-          url: /integrating/configuring-comment-stream/
-        - title: Configuring the Admin
-          url: /integrating/configuring-admin/
-        - title: Notifications
-          url: /integrating/notifications/
-        - title: Event Tracking and Metrics
-          url: /integrating/event-tracking-metrics/
-        - title: Styling and CSS
-          url: /integrating/styling-css/
-        - title: Translations and i18n
-          url: /integrating/translations-i18n/
-        - title: GDPR Compliance
-          url: /integrating/gdpr/
-    - title: Product Guide
-      children:
-        - title: How Talk Works
-          url: /how-talk-works/
-        - title: Commenter Features
-          url: /commenter-features/
-        - title: Moderator Features
-          url: /moderator-features/
-        - title: User Roles in Talk
-          url: /roles/
-        - title: Trust
-          url: /trust/
-        - title: Toxic Comments
-          url: /toxic-comments/
-        - title: Configuring Talk
-          url: /configuring-talk/
-    - title: Plugins
-      children:
-        - title: Plugins Overview
-          url: /plugins/
-        - title: Plugin Directory
-          url: /plugins-directory/
-        - title: Plugin Recipes
-          url: /plugin-recipes/
-    - title: API
-      children:
-        - title: GraphQL Overview
-          url: /api/overview/
-        - title: GraphQL Reference
-          url: /api/graphql/
-        - title: Server Plugin API
-          url: /api/server/
-        - title: Client Plugin API
-          url: /api/client/
-        - title: Plugin Slots API
-          url: /api/slots/
-    - title: Tutorials
-      children:
-        - title: Creating a Basic Plugin
-          url: /building-basic-plugin/
-        - title: Customizing Plugins with Coral UI
-          url: /customizing-plugins-coral-ui/
-        - title: When You've Installed Talk
-          url: /when-youve-installed-talk/
-        - title: Embedding Talk in Native Mobile Apps
-          url: /embedding-in-native-mobile-apps/
+        - title: Installation
+          children:
+            - title: Talk Quickstart
+              url: /installation-quickstart
+            - title: Installation from Docker
+              url: /installation-from-docker/
+            - title: Installation from Source
+              url: /installation-from-source/
+            - title: Planning your Talk Architecture
+              url: /planning-architecture/
+            - title: Pre-Launch Checklist
+              url: /pre-launch-checklist/
+        - title: Configuration
+          children:
+            - title: Required Configuration
+              url: /configuration/
+            - title: Advanced Configuration
+              url: /advanced-configuration/
+            - title: Configuration with CLI tools
+              url: /configuration-cli-tools/
+        - title: Integrating
+          children:
+            - title: Authentication
+              url: /integrating/authentication/
+            - title: CMS Integration
+              url: /integrating/cms-integration/
+            - title: Asset Scraping
+              url: /integrating/asset-scraping/
+            - title: Configuring the Comment Stream
+              url: /integrating/configuring-comment-stream/
+            - title: Configuring the Admin
+              url: /integrating/configuring-admin/
+            - title: Notifications
+              url: /integrating/notifications/
+            - title: Event Tracking and Metrics
+              url: /integrating/event-tracking-metrics/
+            - title: Styling and CSS
+              url: /integrating/styling-css/
+            - title: Translations and i18n
+              url: /integrating/translations-i18n/
+            - title: GDPR Compliance
+              url: /integrating/gdpr/
+            - title: Accelerated Mobile Page
+              url: /integrating/amp/
+        - title: Product Guide
+          children:
+            - title: How Talk Works
+              url: /how-talk-works/
+            - title: Commenter Features
+              url: /commenter-features/
+            - title: Moderator Features
+              url: /moderator-features/
+            - title: User Roles in Talk
+              url: /roles/
+            - title: Trust
+              url: /trust/
+            - title: Toxic Comments
+              url: /toxic-comments/
+            - title: Configuring Talk
+              url: /configuring-talk/
+        - title: Plugins
+          children:
+            - title: Plugins Overview
+              url: /plugins/
+            - title: Plugin Directory
+              url: /plugins-directory/
+            - title: Plugin Recipes
+              url: /plugin-recipes/
+        - title: API
+          children:
+            - title: GraphQL Overview
+              url: /api/overview/
+            - title: GraphQL Reference
+              url: /api/graphql/
+            - title: Server Plugin API
+              url: /api/server/
+            - title: Client Plugin API
+              url: /api/client/
+            - title: Plugin Slots API
+              url: /api/slots/
+        - title: Tutorials
+          children:
+            - title: Creating a Basic Plugin
+              url: /building-basic-plugin/
+            - title: Customizing Plugins with Coral UI
+              url: /customizing-plugins-coral-ui/
+            - title: When You've Installed Talk
+              url: /when-youve-installed-talk/
+            - title: Embedding Talk in Native Mobile Apps
+              url: /embedding-in-native-mobile-apps/
     - title: Migrating
       children:
-        - title: Migrating from v3.x.x
-          url: /migration/3/
-        - title: Migrating to v4.0.0
-          url: /migration/4/
-        - title: Migrating to v4.1.0
-          url: /migration/4.1/
+        - title:
+          children:
+            - title: Migrating from v3.x.x
+              url: /migration/3/
+            - title: Migrating to v4.0.0
+              url: /migration/4/
+            - title: Migrating to v4.1.0
+              url: /migration/4.1/
+            - title: Migrating to v5.0.0
+              url: /migration/5.0/
+            - title: Migrating to v6.0.0
+              url: /migration/6.0/
     - title: FAQ & Troubleshooting
       children:
-        - title: FAQ
-          url: /faq/
-        - title: Troubleshooting Tips
-          url: /troubleshooting-tips/
+        - children:
+            - title: FAQ
+              url: /faq/
+            - title: Troubleshooting Tips
+              url: /troubleshooting-tips/
     - title: Contact
       url: /contact/
 

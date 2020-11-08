@@ -12,6 +12,8 @@ const {
   STATIC_ORIGIN,
 } = require('../url');
 
+const { PORT } = require('../config');
+
 const { RECAPTCHA_PUBLIC, WEBSOCKET_LIVE_URI } = require('../config');
 
 // Grab TALK_CLIENT_* environment variables.
@@ -42,6 +44,7 @@ const TEMPLATE_LOCALS = {
   MOUNT_PATH,
   STATIC_URL,
   TALK_CLIENT_ENV,
+  PORT,
   data: TALK_CLIENT_ENV,
 };
 
@@ -96,12 +99,18 @@ const createResolveFactory = (() => {
 
 module.exports = async (req, res, next) => {
   try {
-    // Attach the custom css url and organization name.
-    const { customCssUrl, organizationName } = await SettingsService.select(
+    // Attach the custom css urls and organization name.
+    const {
+      customCssUrl,
+      customAdminCssUrl,
+      organizationName,
+    } = await SettingsService.select(
       'customCssUrl',
+      'customAdminCssUrl',
       'organizationName'
     );
     res.locals.customCssUrl = customCssUrl;
+    res.locals.customAdminCssUrl = customAdminCssUrl;
     res.locals.organizationName = organizationName;
   } catch (err) {
     console.warn(err);

@@ -3,6 +3,7 @@ const {
   ErrNoLocalProfile,
   ErrLocalProfile,
   ErrIncorrectPassword,
+  ErrDuplicateLocalProfile,
 } = require('./errors');
 const { get } = require('lodash');
 
@@ -20,7 +21,12 @@ async function updateUserEmailAddress(ctx, email, confirmPassword) {
     loaders: { Settings },
     connectors: {
       models: { User },
-      services: { Mailer, I18n, Users, Utils: { getRedirectUri } },
+      services: {
+        Mailer,
+        I18n,
+        Users,
+        Utils: { getRedirectUri },
+      },
     },
   } = ctx;
 
@@ -30,7 +36,7 @@ async function updateUserEmailAddress(ctx, email, confirmPassword) {
   }
 
   // Ensure that the password provided matches what we have on file.
-  if (!await user.verifyPassword(confirmPassword)) {
+  if (!(await user.verifyPassword(confirmPassword))) {
     throw new ErrIncorrectPassword();
   }
 
@@ -91,7 +97,10 @@ async function attachUserLocalAuth(ctx, email, password) {
     user,
     connectors: {
       models: { User },
-      services: { Users, Utils: { getRedirectUri } },
+      services: {
+        Users,
+        Utils: { getRedirectUri },
+      },
     },
   } = ctx;
 
@@ -106,6 +115,11 @@ async function attachUserLocalAuth(ctx, email, password) {
 
   // Validate the password.
   await Users.isValidPassword(password);
+
+  // See if this email address already has a local profile setup.
+  if (await Users.findLocalUser(email)) {
+    throw new ErrDuplicateLocalProfile();
+  }
 
   // Hash the new password.
   const hashedPassword = await Users.hashPassword(password);
@@ -152,7 +166,7 @@ async function attachUserLocalAuth(ctx, email, password) {
     await Users.sendEmailConfirmation(updatedUser, email, redirectUri);
   } catch (err) {
     if (err.code === 11000) {
-      throw new ErrEmailTaken();
+      throw new ErrDuplicateLocalProfile();
     }
     throw err;
   }

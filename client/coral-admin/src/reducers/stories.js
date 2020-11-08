@@ -3,57 +3,79 @@ import update from 'immutability-helper';
 
 const initialState = {
   assets: {
-    byId: {},
-    ids: [],
-    assets: [],
+    edges: [],
+    pageInfo: {},
   },
   searchValue: '',
   criteria: {
-    asc: 'false',
     filter: 'all',
-    limit: 20,
   },
+  loading: true,
+  loadingMore: false,
 };
 
 export default function assets(state = initialState, action) {
   switch (action.type) {
-    case actions.FETCH_ASSETS_SUCCESS: {
-      const assets = action.assets.reduce((prev, curr) => {
-        prev[curr.id] = curr;
-        return prev;
-      }, {});
-
+    case actions.FETCH_ASSETS_REQUEST: {
       return update(state, {
+        loading: { $set: true },
+      });
+    }
+    case actions.FETCH_ASSETS_FAILURE: {
+      return update(state, {
+        loading: { $set: false },
+      });
+    }
+    case actions.FETCH_ASSETS_SUCCESS: {
+      return update(state, {
+        loading: { $set: false },
         assets: {
-          totalPages: { $set: action.totalPages },
-          page: { $set: action.page },
-          byId: { $set: assets },
-          count: { $set: action.count },
-          ids: { $set: Object.keys(assets) },
+          edges: { $set: action.edges },
+          pageInfo: { $set: action.pageInfo },
         },
       });
     }
-    case actions.UPDATE_ASSET_STATE_REQUEST:
+    case actions.LOAD_MORE_ASSETS_REQUEST: {
+      return update(state, {
+        loadingMore: { $set: true },
+      });
+    }
+    case actions.LOAD_MORE_ASSETS_FAILURE: {
+      return update(state, {
+        loadingMore: { $set: false },
+      });
+    }
+    case actions.LOAD_MORE_ASSETS_SUCCESS: {
+      return update(state, {
+        loadingMore: { $set: false },
+        assets: {
+          edges: { $push: action.edges },
+          pageInfo: {
+            endCursor: { $set: action.pageInfo.endCursor },
+            hasNextPage: { $set: action.pageInfo.hasNextPage },
+          },
+        },
+      });
+    }
+    case actions.UPDATE_ASSET_STATE_SUCCESS:
+      const index = state.assets.edges.findIndex(
+        ({ node: { id } }) => id === action.id
+      );
+      if (index < 0) {
+        return state;
+      }
+
       return update(state, {
         assets: {
-          byId: {
-            [action.id]: {
-              closedAt: { $set: action.closedAt },
+          edges: {
+            [index]: {
+              node: {
+                closedAt: { $set: action.closedAt },
+              },
             },
           },
         },
       });
-    case actions.UPDATE_ASSETS:
-      return update(state, {
-        assets: {
-          assets: { $set: action.assets },
-        },
-      });
-    case actions.SET_PAGE:
-      return {
-        ...state,
-        page: action.page,
-      };
     case actions.SET_SEARCH_VALUE:
       return {
         ...state,

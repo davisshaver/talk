@@ -22,6 +22,10 @@ const {
   ROOT_URL,
   RECAPTCHA_WINDOW,
   RECAPTCHA_INCORRECT_TRIGGER,
+  USERNAME_CAST_REGEXP,
+  USERNAME_REPLACEMENT_CAST_REGEXP,
+  USERNAME_REPLACEMENT_CHARACTER,
+  USERNAME_VALIDATION_REGEX,
 } = require('../config');
 const { jwt: JWT_SECRET } = require('../secrets');
 const debug = require('debug')('talk:services:users');
@@ -206,7 +210,7 @@ class Users {
         locals: {
           body: message,
         },
-        subject: 'Your account has been suspended', // TODO: replace with translation
+        subject: i18n.t('email.suspended.subject'),
       });
     }
 
@@ -303,7 +307,7 @@ class Users {
         locals: {
           body: message,
         },
-        subject: 'Your account has been banned',
+        subject: i18n.t('email.banned.subject'),
       });
     }
 
@@ -525,7 +529,10 @@ class Users {
   }
 
   static castUsername(username) {
-    return username.replace(/ /g, '_').replace(/[^a-zA-Z_]/g, '');
+    return username
+      .trim()
+      .replace(USERNAME_REPLACEMENT_CAST_REGEXP, USERNAME_REPLACEMENT_CHARACTER)
+      .replace(USERNAME_CAST_REGEXP, '');
   }
 
   /**
@@ -554,7 +561,11 @@ class Users {
     for (let i = 0; i < MAX_ATTEMPTS; i++) {
       // Generate `GROUP_ATTEMPTS` guesses for the username.
       const usernameGuesses = Array.from(Array(GROUP_ATTEMPTS)).map(
-        () => `${castedName}_${random(0, END_NUMBER_MAX)}`
+        () =>
+          `${castedName}${USERNAME_REPLACEMENT_CHARACTER}${random(
+            0,
+            END_NUMBER_MAX
+          )}`
       );
 
       // Map them all to lowercase.
@@ -563,12 +574,14 @@ class Users {
       );
 
       // See if any of these users aren't taken already.
-      const existingUsernames = (await User.find(
-        {
-          lowercaseUsername: { $in: lowercaseUsernameGuesses },
-        },
-        { lowercaseUsername: 1 }
-      )).map(({ lowercaseUsername }) => lowercaseUsername);
+      const existingUsernames = (
+        await User.find(
+          {
+            lowercaseUsername: { $in: lowercaseUsernameGuesses },
+          },
+          { lowercaseUsername: 1 }
+        )
+      ).map(({ lowercaseUsername }) => lowercaseUsername);
       if (existingUsernames.length === lowercaseUsernameGuesses.length) {
         // The number of found users is the same as the number of username
         // guesses, aka, all the usernames are taken.
@@ -684,13 +697,11 @@ class Users {
    * @return {Promise}
    */
   static async isValidUsername(username, checkAgainstWordlist = true) {
-    const onlyLettersNumbersUnderscore = /^[A-Za-z0-9_]+$/;
-
     if (!username) {
       throw new ErrMissingUsername();
     }
 
-    if (!onlyLettersNumbersUnderscore.test(username)) {
+    if (!USERNAME_VALIDATION_REGEX.test(username)) {
       throw new ErrSpecialChars();
     }
 

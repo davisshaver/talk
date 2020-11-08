@@ -35,6 +35,9 @@ en:
     flagged: flagged
     undo_reject: Undo
     view_context: 'View context'
+    edit_history: 'Edit history'
+    show_edit_history: 'Show edit history'
+    hide_edit_history: 'Hide edit history'
   comment_box:
     cancel: Cancel
     characters_remaining: 'characters remaining'
@@ -124,6 +127,8 @@ en:
     copy_and_paste: 'Copy and paste code below into your CMS to embed your comment box in your articles'
     custom_css_url: 'Custom CSS URL'
     custom_css_url_desc: 'URL of a CSS stylesheet that will override default Embed Stream styles. Can be internal or external.'
+    custom_admin_css_url: 'Custom Admin Panel CSS URL'
+    custom_admin_css_url_desc: 'URL of a CSS stylesheet that will override default admin panel styles. Can be internal or external.'
     days: Days
     description: 'Change the comment settings on this story.'
     disable_commenting_desc: 'Write a message that will be displayed while commenting is deactivated.'
@@ -332,7 +337,7 @@ en:
       button: Submit
       error: 'Usernames can contain letters numbers and _ only'
       label: 'New Username'
-      msg: 'Your account is currently suspended because your username has been deemed inappropriate. To restore your account please enter a new username. Please contact us if you have any questions.'
+      rejected: 'Your choice of username has been rejected because it is not in line with our username policies. Please submit another name for moderator approval.'
     my_comments: 'My Comments'
     my_profile: 'My profile'
     new_count: 'View {0} more {1}'
@@ -380,7 +385,7 @@ en:
     sign_in_message: 'Sign in to interact with your community.'
     password: Password
     reset_password_send_button: 'Retrieve Password'
-    request_passowrd: 'Request a new one.'
+    request_password: 'Request a new one.'
     team_sign_in: 'Team sign in'
   marketing: 'This looks like an ad/marketing'
   moderate_all_streams: 'Moderate comments on All Stories'
@@ -588,4 +593,4 @@ en:
   view_conversation: 'View Conversation'
   your_account_has_been_banned: 'Your account has been banned.'
   your_account_has_been_suspended: 'Your account has been temporarily suspended.'
-  your_username_has_been_rejected: 'Your account has been suspended because your username has been deemed inappropriate. To restore your account please enter a new username.'
+  your_username_has_been_rejected_not_in_line: 'Your choice of username has been rejected because it is not in line with our username policies. Please submit another name for moderator approval.'
